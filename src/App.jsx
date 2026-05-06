@@ -29,7 +29,7 @@ function App() {
     setIsLoading(true);
 
     try {
-      const respon = await fetch('https://aika-backend.vercel.app/api/chat', {
+      const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({  // KITA UBAH BAGIAN INI: Sekarang kurir membawa 'message' dan 'history'
