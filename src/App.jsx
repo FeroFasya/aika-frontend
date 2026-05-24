@@ -326,6 +326,13 @@ function App() {
           </div>
         </div>
 
+        {/* VOICEVOX COPYRIGHT WATERMARK */}
+        <div className="absolute bottom-2 right-4 md:bottom-4 md:right-6 pointer-events-none opacity-40 hover:opacity-100 transition-opacity">
+          <p className="text-[10px] md:text-xs text-white/70 font-medium tracking-wide drop-shadow-md">
+            音声合成: VOICEVOX (もち子さん)
+          </p>
+        </div>
+
       </div>
     </div>
   );
