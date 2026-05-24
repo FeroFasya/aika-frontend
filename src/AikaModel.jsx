@@ -7,7 +7,7 @@ import * as THREE from 'three';
 
 const animationFiles = {
   santai: ['/animations/santai/Happy.fbx', '/animations/santai/Idle.fbx'],
-  marah: ['/animations/marah/angry.fbx', '/animations/marah/StandingArguing.fbx', '/animations/marah/Pouting.fbx', '/animations/marah/AngryPoint.fbx'],
+  marah: ['/animations/marah/angry.fbx', '/animations/marah/StandingArguing.fbx', '/animations/marah/AngryPoint.fbx'],
   malu: ['/animations/malu/Bashful.fbx', '/animations/malu/Talking.fbx', '/animations/malu/Thinking.fbx'],
   sedih: ['/animations/sedih/Sad.fbx', '/animations/sedih/rejected.fbx', '/animations/sedih/Pouting.fbx'],
   goda: ['/animations/goda/Loser.fbx'],
