@@ -11,7 +11,7 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
 
   return (
     <Html position={[0, 1.45, 0.5]} center zIndexRange={[100, 0]}>
-      <div className="w-[340px] text-white font-bold text-lg md:text-xl drop-shadow-[0_2px_5px_rgba(0,0,0,1)] leading-snug text-center">
+      <div className="w-[450px] miside-text text-3xl md:text-4xl tracking-wide leading-snug text-center">
         {characters.map((char, index) => (
           <span
             key={index}
