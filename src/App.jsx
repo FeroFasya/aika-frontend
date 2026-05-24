@@ -16,7 +16,7 @@ function ResponsiveCamera() {
         camera.fov = 35;
       } else {
         // Posisi default untuk layar mobile
-        camera.position.set(0, 1.45, 2.2);
+        camera.position.set(0, 1.45, 1.5);
         camera.fov = 40;
       }
       camera.updateProjectionMatrix();
