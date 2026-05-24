@@ -10,15 +10,16 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
   const characters = text.split('');
 
   return (
-    <Html position={[0, 1.15, 0.5]} center zIndexRange={[100, 0]}>
-      <div className="w-[450px] miside-text text-3xl md:text-4xl tracking-wide leading-snug text-center">
+    <Html position={[0, 1.0, 0.4]} center zIndexRange={[100, 0]}>
+      <div className="w-[90vw] max-w-[450px] text-3xl md:text-4xl tracking-wide leading-snug text-center">
         {characters.map((char, index) => (
           <span
             key={index}
-            className={`inline-block ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
+            className={`inline-block miside-text ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
             style={{ 
               animationDelay: isAudioPlaying ? `${index * 0.03}s` : `${index * 0.015}s`,
-              whiteSpace: char === ' ' ? 'pre' : 'normal' 
+              whiteSpace: char === ' ' ? 'pre' : 'normal',
+              padding: '2px' // Memberi ruang agar stroke font tidak terpotong
             }}
           >
             {char}
