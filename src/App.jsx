@@ -1,8 +1,33 @@
 import { useState, useRef, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, Html } from '@react-three/drei';
 import AikaModel from './AikaModel';
 import './App.css';
+
+function FloatingText({ text, isVisible, isAudioPlaying }) {
+  if (!isVisible || !text) return null;
+
+  const characters = text.split('');
+
+  return (
+    <Html position={[0, 1.45, 0.5]} center zIndexRange={[100, 0]}>
+      <div className="w-[340px] text-white font-bold text-lg md:text-xl drop-shadow-[0_2px_5px_rgba(0,0,0,1)] leading-snug text-center">
+        {characters.map((char, index) => (
+          <span
+            key={index}
+            className={`inline-block ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
+            style={{ 
+              animationDelay: isAudioPlaying ? `${index * 0.03}s` : `${index * 0.015}s`,
+              whiteSpace: char === ' ' ? 'pre' : 'normal' 
+            }}
+          >
+            {char}
+          </span>
+        ))}
+      </div>
+    </Html>
+  );
+}
 
 function ResponsiveCamera() {
   const { camera } = useThree();
@@ -52,6 +77,8 @@ function App() {
   const [feroTyping, setFeroTyping] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [audioUrl, setAudioUrl] = useState(null);
+  const [isPhoneMode, setIsPhoneMode] = useState(false);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -192,6 +219,9 @@ function App() {
       alert("Browser kamu tidak mendukung fitur suara (STT). Coba gunakan Chrome.");
       return;
     }
+
+    setIsPhoneMode(true); // Masuk ke mode Immersive
+
     const recognition = new SpeechRecognition();
     recognition.lang = 'id-ID';
     recognition.interimResults = false;
@@ -262,7 +292,14 @@ function App() {
     <div className="relative w-full h-screen font-sans overflow-hidden bg-black">
       
       {/* Audio Element Tersembunyi (Aman dari Garbage Collection) */}
-      <audio id="aika-voice-player" crossOrigin="anonymous" className="hidden" />
+      <audio 
+        id="aika-voice-player" 
+        crossOrigin="anonymous" 
+        className="hidden" 
+        onPlay={() => setIsAudioPlaying(true)}
+        onEnded={() => setIsAudioPlaying(false)}
+        onPause={() => setIsAudioPlaying(false)}
+      />
 
       {/* 1. DYNAMIC BACKGROUND LAYER */}
       <div 
@@ -283,6 +320,11 @@ function App() {
           />
           <Suspense fallback={null}>
             <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} />
+            <FloatingText 
+              text={isPhoneMode ? latestAikaMessage : ""} 
+              isVisible={isPhoneMode} 
+              isAudioPlaying={isAudioPlaying} 
+            />
           </Suspense>
           {/* OrbitControls dikunci agar Aika tidak bisa diputar, tapi targetnya dipastikan ke dada/wajah */}
           <OrbitControls 
@@ -318,8 +360,8 @@ function App() {
           <div className="w-[80px] md:w-[100px]"></div>
         </div>
 
-        {/* VISUAL NOVEL TEXTBOX */}
-        <div className="w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto">
+        {/* VISUAL NOVEL TEXTBOX (HANYA MUNCUL JIKA TIDAK DI PHONE MODE) */}
+        <div className={`w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
           <div className="relative bg-zinc-900/85 backdrop-blur-xl border-2 border-pink-500 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all">
             
             {/* NAME BADGE */}
@@ -385,6 +427,30 @@ function App() {
               </div>
             </form>
 
+          </div>
+        </div>
+
+        {/* IMMERSIVE PHONE MODE UI (TOMBOL MIC & CANCEL DI TENGAH BAWAH) */}
+        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-6 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10 pointer-events-none'}`}>
+          <button
+            onClick={() => setIsPhoneMode(false)}
+            className="w-12 h-12 rounded-full bg-red-500/20 hover:bg-red-500/40 border border-red-500/50 text-red-400 flex items-center justify-center shadow-lg backdrop-blur-md transition-all active:scale-90"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+
+          <div className="relative">
+            {/* Pulsing ring jika sedang mendengarkan */}
+            {isListening && <div className="absolute inset-0 rounded-full bg-pink-500 animate-ping opacity-50"></div>}
+            <button
+              onClick={toggleListen}
+              disabled={isLoading && !isListening}
+              className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-all active:scale-95 ${
+                isListening ? 'bg-pink-500 text-white' : 'bg-zinc-900/80 border border-pink-500/50 text-pink-400 hover:bg-pink-500/20 backdrop-blur-md'
+              }`}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+            </button>
           </div>
         </div>
 

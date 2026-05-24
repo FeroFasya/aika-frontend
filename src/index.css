@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .animate-wave-entry {
+    animation: waveEntry 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  }
+  .animate-fall-exit {
+    animation: fallExit 0.8s ease-in forwards;
+  }
+}
+
+@keyframes waveEntry {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-10px) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fallExit {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(-10px) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100px) rotate(20deg);
+  }
+}
