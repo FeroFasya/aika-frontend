@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { VRMLoaderPlugin, VRMHumanBoneName } from '@pixiv/three-vrm';
-import { retargetAnimation } from 'vrm-mixamo-retarget';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader';
+import { retargetAnimationFromUrl } from 'vrm-mixamo-retarget';
 import * as THREE from 'three';
 
 const animationFiles = {
@@ -11,9 +10,8 @@ const animationFiles = {
   marah: ['/animations/marah/angry.fbx', '/animations/marah/StandingArguing.fbx', '/animations/marah/No.fbx'],
   malu: ['/animations/malu/Bashful.fbx', '/animations/malu/Talking.fbx', '/animations/malu/Thinking.fbx'],
   sedih: ['/animations/sedih/Sad.fbx', '/animations/sedih/rejected.fbx', '/animations/sedih/Pouting.fbx'],
-  // goda: ['/animations/goda/Crazy.fbx', '/animations/goda/Petting.fbx', '/animations/marah/angry.fbx'],
-    goda: ['/animations/goda/gantipose.fbx'], 
- acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx'] 
+  goda: ['/animations/goda/Crazy.fbx', '/animations/goda/Petting.fbx', '/animations/marah/angry.fbx'],
+  acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx'] 
 };
 
 export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl }) {
@@ -143,16 +141,11 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
       // Jika sudah pernah didownload (cache), langsung mainkan
       playAction(actionsCache.current[randomFile]);
     } else {
-      // Jika belum, download menggunakan FBXLoader dan ambil nama clip secara dinamis
-      const fbxLoader = new FBXLoader();
-      fbxLoader.loadAsync(randomFile).then((fbxAsset) => {
-        if (fbxAsset.animations && fbxAsset.animations.length > 0) {
-          const clipName = fbxAsset.animations[0].name;
-          const clip = retargetAnimation(fbxAsset, vrm, { animationClipName: clipName });
-          if (clip) {
-            actionsCache.current[randomFile] = clip;
-            playAction(clip);
-          }
+      // Jika belum, download dan retarget dulu
+      retargetAnimationFromUrl(randomFile, vrm).then((clip) => {
+        if (clip) {
+          actionsCache.current[randomFile] = clip;
+          playAction(clip);
         }
       }).catch((err) => console.error(`Gagal meload animasi ${randomFile}:`, err));
     }
