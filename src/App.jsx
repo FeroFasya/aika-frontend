@@ -142,6 +142,25 @@ function App() {
       const teksJepang = data.japanese_reply || data.reply; // Fallback jika tidak ada
       const emosiAikaBaru = data.emotion || 'netral';
 
+      // --- FETCH TTS DARI VOICEVOX DULU (TUNGGU SAMPAI SELESAI) ---
+      let audioTtsUrl = null;
+      try {
+        const responTts = await fetch(`${import.meta.env.VITE_API_URL}/api/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: teksJepang })
+        });
+        if (responTts.ok) {
+          const dataTts = await responTts.json();
+          if (dataTts.audioUrl) {
+            audioTtsUrl = dataTts.audioUrl;
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil suara:", err);
+      }
+
+      // --- SETELAH AUDIO SIAP, BARU TAMPILKAN TEKS DAN MAINKAN SUARA ---
       setEmosiAika({ emosi: emosiAikaBaru, id: Date.now() });
       
       setDaftarChat((prev) => [
@@ -157,20 +176,8 @@ function App() {
         id: `msg-${Date.now()}`
       }]);
 
-      // --- FETCH TTS DARI ELEVENLABS MENGGUNAKAN TEKS JEPANG ---
-      try {
-        const responTts = await fetch(`${import.meta.env.VITE_API_URL}/api/tts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: teksJepang })
-        });
-        if (responTts.ok) {
-          const blob = await responTts.blob();
-          const url = URL.createObjectURL(blob);
-          setAudioUrl(url); // Kirim ke AikaModel untuk diputar
-        }
-      } catch (err) {
-        console.error("Gagal mengambil suara:", err);
+      if (audioTtsUrl) {
+        setAudioUrl(audioTtsUrl); // Mainkan suara bersaman dengan teks muncul
       }
 
     } catch (error) {
