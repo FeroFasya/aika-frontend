@@ -6,7 +6,7 @@ import { retargetAnimationFromUrl } from 'vrm-mixamo-retarget';
 import * as THREE from 'three';
 
 const animationFiles = {
-  santai: ['/animations/santai/Happy.fbx', '/animations/santai/Idle.fbx', '/animations/santai/LookingAround.fbx'],
+  santai: ['/animations/santai/Happy.fbx', '/animations/santai/Idle.fbx', '/animations/santai/LookAround.fbx'], 
   marah: ['/animations/marah/angry.fbx', '/animations/marah/StandingArguing.fbx', '/animations/marah/No.fbx'],
   malu: ['/animations/malu/Bashful.fbx', '/animations/malu/Talking.fbx', '/animations/malu/Thinking.fbx'],
   sedih: ['/animations/sedih/Sad.fbx', '/animations/sedih/rejected.fbx', '/animations/sedih/Pouting.fbx'],
