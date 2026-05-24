@@ -10,7 +10,7 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
   const characters = text.split('');
 
   return (
-    <Html position={[0, 1.45, 0.5]} center zIndexRange={[100, 0]}>
+    <Html position={[0, 1.15, 0.5]} center zIndexRange={[100, 0]}>
       <div className="w-[450px] miside-text text-3xl md:text-4xl tracking-wide leading-snug text-center">
         {characters.map((char, index) => (
           <span
