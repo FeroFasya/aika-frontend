@@ -151,6 +151,55 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
     }
   }, [emosiAktif, emosiTrigger, vrm]);
 
+  // 2B. KEMBALI KE IDLE SETELAH ANIMASI SELESAI
+  useEffect(() => {
+    if (!vrm || !mixerRef.current) return;
+
+    const playIdle = () => {
+      const files = animationFiles['santai'];
+      const randomFile = files[Math.floor(Math.random() * files.length)];
+      
+      const doPlay = (clip) => {
+        const action = mixerRef.current.clipAction(clip);
+        action.reset();
+        action.setLoop(THREE.LoopRepeat, Infinity);
+        action.clampWhenFinished = false;
+        action.play();
+        if (currentActionRef.current && currentActionRef.current !== action) {
+          currentActionRef.current.crossFadeTo(action, 0.5, true);
+        } else {
+          action.setEffectiveWeight(1);
+        }
+        currentActionRef.current = action;
+        console.log(`🎬 Kembali ke Idle: ${randomFile}`);
+      };
+
+      if (actionsCache.current[randomFile]) {
+        doPlay(actionsCache.current[randomFile]);
+      } else {
+        retargetAnimationFromUrl(randomFile, vrm).then((clip) => {
+          if (clip) {
+            actionsCache.current[randomFile] = clip;
+            doPlay(clip);
+          }
+        });
+      }
+    };
+
+    const handleFinished = (e) => {
+      // Ketika sebuah animasi (yg bukan loop) selesai, mainkan idle
+      playIdle();
+    };
+
+    mixerRef.current.addEventListener('finished', handleFinished);
+
+    return () => {
+      if (mixerRef.current) {
+        mixerRef.current.removeEventListener('finished', handleFinished);
+      }
+    };
+  }, [vrm]);
+
   // 3. RENDER LOOP (USEFRAME)
   useFrame((state, delta) => {
     if (vrm) {
