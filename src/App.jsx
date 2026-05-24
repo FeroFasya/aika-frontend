@@ -55,6 +55,113 @@ function App() {
   
   const [timeState, setTimeState] = useState(new Date());
 
+  // --- REFS UNTUK MENGHINDARI STALE STATE PADA TIMER ---
+  const latestChatRef = useRef(daftarChat);
+  const idleTimerRef = useRef(null);
+
+  useEffect(() => {
+    latestChatRef.current = daftarChat;
+  }, [daftarChat]);
+
+  // --- SISTEM IDLE (AIKA BOSAN) ---
+  const kirimPesanKeAika = async (pesanTeks, isHidden = false) => {
+    setIsLoading(true);
+
+    try {
+      const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: pesanTeks,
+          history: latestChatRef.current // Gunakan ref agar selalu update
+        })
+      });
+      const data = await respon.json();
+
+      const teksIndonesia = data.reply;
+      const teksJepang = data.japanese_reply || data.reply;
+      const emosiAikaBaru = data.emotion || 'netral';
+
+      // --- FETCH TTS ---
+      let audioTtsUrl = null;
+      try {
+        const responTts = await fetch(`${import.meta.env.VITE_API_URL}/api/tts`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: teksJepang })
+        });
+        if (responTts.ok) {
+          const dataTts = await responTts.json();
+          if (dataTts.audioUrl) {
+            audioTtsUrl = dataTts.audioUrl;
+          }
+        }
+      } catch (err) {
+        console.error("Gagal mengambil suara:", err);
+      }
+
+      setEmosiAika({ emosi: emosiAikaBaru, id: Date.now() });
+      
+      // Jika pesan bukan rahasia, ubah status pesan terakhir User menjadi RECEIVED
+      if (!isHidden) {
+        setDaftarChat((prev) => [
+          ...prev.slice(0, -1),
+          { ...prev[prev.length - 1], status: MESSAGE_STATUS.RECEIVED },
+        ]);
+      }
+
+      setDaftarChat((prev) => [...prev, {
+        role: 'aika',
+        text: teksIndonesia,
+        timestamp: new Date(),
+        status: MESSAGE_STATUS.RECEIVED,
+        id: `msg-${Date.now()}`
+      }]);
+
+      if (audioTtsUrl) {
+        setAudioUrl(audioTtsUrl);
+      }
+
+    } catch (error) {
+      setDaftarChat((prev) => [...prev, {
+        role: 'aika',
+        text: 'Aduhh kepalaku pusing... kayaknya limit kamu habis deh, coba lagi besok',
+        timestamp: new Date(),
+        status: MESSAGE_STATUS.RECEIVED,
+        id: `msg-error-${Date.now()}`
+      }]);
+    } finally {
+      setIsLoading(false);
+      resetIdleTimer(); // Reset timer setelah Aika selesai bicara
+    }
+  };
+
+  const resetIdleTimer = () => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      // Trigger idle setelah 60 detik
+      const promptRahasia = "(Sistem: User diam saja selama 1 menit dan mendiamkanmu. Coba sapa dia, goda dia, atau cari perhatiannya. Gunakan emosi [acak], [goda], atau [sedih]. Jangan sebut ini pesan dari sistem, bertingkahlah natural menyapa/mengeluh)";
+      kirimPesanKeAika(promptRahasia, true);
+    }, 60000); // 60 detik
+  };
+
+  // Pantau aktivitas layar untuk me-reset timer
+  useEffect(() => {
+    resetIdleTimer(); // Mulai timer saat awal
+    const handleActivity = () => resetIdleTimer();
+    
+    window.addEventListener('mousemove', handleActivity);
+    window.addEventListener('keydown', handleActivity);
+    window.addEventListener('click', handleActivity);
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      window.removeEventListener('mousemove', handleActivity);
+      window.removeEventListener('keydown', handleActivity);
+      window.removeEventListener('click', handleActivity);
+    };
+  }, []);
+
   // Inisialisasi Global Audio Context agar tidak diblokir (Autoplay Policy)
   useEffect(() => {
     const unlockAudio = () => {
@@ -125,72 +232,9 @@ function App() {
     setDaftarChat((prev) => [...prev, newFeroMessage]);
     setInputPesan('');
     setFeroTyping(false);
-    setIsLoading(true);
+    resetIdleTimer();
 
-    try {
-      const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: pesanFero,
-          history: daftarChat
-        })
-      });
-      const data = await respon.json();
-
-      const teksIndonesia = data.reply;
-      const teksJepang = data.japanese_reply || data.reply; // Fallback jika tidak ada
-      const emosiAikaBaru = data.emotion || 'netral';
-
-      // --- FETCH TTS DARI VOICEVOX DULU (TUNGGU SAMPAI SELESAI) ---
-      let audioTtsUrl = null;
-      try {
-        const responTts = await fetch(`${import.meta.env.VITE_API_URL}/api/tts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: teksJepang })
-        });
-        if (responTts.ok) {
-          const dataTts = await responTts.json();
-          if (dataTts.audioUrl) {
-            audioTtsUrl = dataTts.audioUrl;
-          }
-        }
-      } catch (err) {
-        console.error("Gagal mengambil suara:", err);
-      }
-
-      // --- SETELAH AUDIO SIAP, BARU TAMPILKAN TEKS DAN MAINKAN SUARA ---
-      setEmosiAika({ emosi: emosiAikaBaru, id: Date.now() });
-      
-      setDaftarChat((prev) => [
-        ...prev.slice(0, -1),
-        { ...prev[prev.length - 1], status: MESSAGE_STATUS.RECEIVED },
-      ]);
-
-      setDaftarChat((prev) => [...prev, {
-        role: 'aika',
-        text: teksIndonesia,
-        timestamp: new Date(),
-        status: MESSAGE_STATUS.RECEIVED,
-        id: `msg-${Date.now()}`
-      }]);
-
-      if (audioTtsUrl) {
-        setAudioUrl(audioTtsUrl); // Mainkan suara bersaman dengan teks muncul
-      }
-
-    } catch (error) {
-      setDaftarChat((prev) => [...prev, {
-        role: 'aika',
-        text: 'Aduhh kepalaku pusing... kayaknya limit fero habis deh, coba lagi besok',
-        timestamp: new Date(),
-        status: MESSAGE_STATUS.RECEIVED,
-        id: `msg-error-${Date.now()}`
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
+    await kirimPesanKeAika(pesanFero, false);
   };
 
   // Ambil pesan terakhir dari Aika
