@@ -80,6 +80,7 @@ function App() {
   const [audioUrl, setAudioUrl] = useState(null);
   const [isPhoneMode, setIsPhoneMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState(null);
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -143,16 +144,35 @@ function App() {
         ]);
       }
 
-      setDaftarChat((prev) => [...prev, {
+      const newMessage = {
         role: 'aika',
         text: teksIndonesia,
         timestamp: new Date(),
         status: MESSAGE_STATUS.RECEIVED,
         id: `msg-${Date.now()}`
-      }]);
+      };
 
       if (audioTtsUrl) {
+        // Tahan pesan di state pending agar teks tidak mendahului suara
+        setPendingMessage(newMessage);
         setAudioUrl(audioTtsUrl);
+        // Fallback: Jika setelah 4 detik suara tidak mau main (misal diblokir browser), paksa munculkan teks
+        setTimeout(() => {
+          setPendingMessage((currentPending) => {
+            if (currentPending && currentPending.id === newMessage.id) {
+              setDaftarChat((prev) => [...prev, currentPending]);
+              setIsLoading(false);
+              resetIdleTimer();
+              return null;
+            }
+            return currentPending;
+          });
+        }, 4000);
+      } else {
+        // Jika tidak ada suara (error tts), langsung munculkan teks
+        setDaftarChat((prev) => [...prev, newMessage]);
+        setIsLoading(false);
+        resetIdleTimer();
       }
 
     } catch (error) {
@@ -163,9 +183,8 @@ function App() {
         status: MESSAGE_STATUS.RECEIVED,
         id: `msg-error-${Date.now()}`
       }]);
-    } finally {
       setIsLoading(false);
-      resetIdleTimer(); // Reset timer setelah Aika selesai bicara
+      resetIdleTimer();
     }
   };
 
@@ -297,7 +316,16 @@ function App() {
         id="aika-voice-player" 
         crossOrigin="anonymous" 
         className="hidden" 
-        onPlay={() => setIsAudioPlaying(true)}
+        onPlaying={() => {
+          setIsAudioPlaying(true);
+          // Saat suara benar-benar mulai keluar, barulah kita munculkan teksnya!
+          if (pendingMessage) {
+            setDaftarChat((prev) => [...prev, pendingMessage]);
+            setPendingMessage(null);
+            setIsLoading(false);
+            resetIdleTimer();
+          }
+        }}
         onEnded={() => setIsAudioPlaying(false)}
         onPause={() => setIsAudioPlaying(false)}
       />
