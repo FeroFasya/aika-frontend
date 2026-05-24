@@ -11,12 +11,12 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
 
   return (
     <Html position={[0, 1.2, 0.4]} center zIndexRange={[100, 0]}>
-      <div className="w-[90vw] max-w-[450px] md:max-w-[800px] text-3xl md:text-4xl tracking-wide leading-snug text-center">
+      <div className="w-[90vw] max-w-[450px] md:max-w-[2000px] text-2xl md:text-3xl tracking-wide leading-snug text-center">
         {characters.map((char, index) => (
           <span
             key={index}
             className={`inline-block miside-text ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
-            style={{ 
+            style={{  
               animationDelay: isAudioPlaying ? `${index * 0.06}s` : `${index * 0.015}s`,
               whiteSpace: char === ' ' ? 'pre' : 'normal',
               padding: '2px' // Memberi ruang agar stroke font tidak terpotong
