@@ -197,10 +197,23 @@ function App() {
     recognition.interimResults = false;
     recognition.continuous = false;
     recognition.onstart = () => setIsListening(true);
-    recognition.onresult = (event) => {
+    recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
-      setInputPesan(transcript);
-      setFeroTyping(true);
+      setIsListening(false); // Matikan visual mikrofon langsung
+      
+      const newFeroMessage = {
+        role: 'fero',
+        text: transcript,
+        timestamp: new Date(),
+        status: MESSAGE_STATUS.SENDING,
+        id: `msg-${Date.now()}`
+      };
+      
+      setDaftarChat((prev) => [...prev, newFeroMessage]);
+      resetIdleTimer();
+      
+      // Auto-send ke Aika!
+      await kirimPesanKeAika(transcript, false);
     };
     recognition.onend = () => setIsListening(false);
     recognition.start();
