@@ -54,6 +54,7 @@ function App() {
   const [audioUrl, setAudioUrl] = useState(null);
   
   const [timeState, setTimeState] = useState(new Date());
+  const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
 
   // --- REFS UNTUK MENGHINDARI STALE STATE PADA TIMER ---
   const latestChatRef = useRef(daftarChat);
@@ -67,13 +68,17 @@ function App() {
   const kirimPesanKeAika = async (pesanTeks, isHidden = false) => {
     setIsLoading(true);
 
+    const currentTimeString = timeState.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
     try {
       const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: pesanTeks,
-          history: latestChatRef.current // Gunakan ref agar selalu update
+          history: latestChatRef.current,
+          location: currentLocation,
+          time: currentTimeString
         })
       });
       const data = await respon.json();
