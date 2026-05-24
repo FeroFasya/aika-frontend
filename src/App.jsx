@@ -134,8 +134,8 @@ function App() {
         console.error("Gagal mengambil suara:", err);
       }
 
-      setEmosiAika({ emosi: emosiAikaBaru, id: Date.now() });
-      
+      // Hapus setEmosiAika dari sini agar animasi tertahan
+
       // Jika pesan bukan rahasia, ubah status pesan terakhir User menjadi RECEIVED
       if (!isHidden) {
         setDaftarChat((prev) => [
@@ -149,18 +149,20 @@ function App() {
         text: teksIndonesia,
         timestamp: new Date(),
         status: MESSAGE_STATUS.RECEIVED,
-        id: `msg-${Date.now()}`
+        id: `msg-${Date.now()}`,
+        emosi: emosiAikaBaru // Simpan emosi di dalam pesan yang di-pending
       };
 
       if (audioTtsUrl) {
-        // Tahan pesan di state pending agar teks tidak mendahului suara
+        // Tahan pesan di state pending agar teks dan animasi tidak mendahului suara
         setPendingMessage(newMessage);
         setAudioUrl(audioTtsUrl);
-        // Fallback: Jika setelah 4 detik suara tidak mau main (misal diblokir browser), paksa munculkan teks
+        // Fallback: Jika setelah 4 detik suara tidak mau main, paksa munculkan teks & animasi
         setTimeout(() => {
           setPendingMessage((currentPending) => {
             if (currentPending && currentPending.id === newMessage.id) {
               setDaftarChat((prev) => [...prev, currentPending]);
+              setEmosiAika({ emosi: currentPending.emosi, id: Date.now() });
               setIsLoading(false);
               resetIdleTimer();
               return null;
@@ -169,8 +171,9 @@ function App() {
           });
         }, 4000);
       } else {
-        // Jika tidak ada suara (error tts), langsung munculkan teks
+        // Jika tidak ada suara (error tts), langsung munculkan teks & animasi
         setDaftarChat((prev) => [...prev, newMessage]);
+        setEmosiAika({ emosi: newMessage.emosi, id: Date.now() });
         setIsLoading(false);
         resetIdleTimer();
       }
@@ -183,6 +186,7 @@ function App() {
         status: MESSAGE_STATUS.RECEIVED,
         id: `msg-error-${Date.now()}`
       }]);
+      setEmosiAika({ emosi: 'sedih', id: Date.now() });
       setIsLoading(false);
       resetIdleTimer();
     }
@@ -318,9 +322,12 @@ function App() {
         className="hidden" 
         onPlaying={() => {
           setIsAudioPlaying(true);
-          // Saat suara benar-benar mulai keluar, barulah kita munculkan teksnya!
+          // Saat suara benar-benar mulai keluar, barulah kita munculkan teks & animasi!
           if (pendingMessage) {
             setDaftarChat((prev) => [...prev, pendingMessage]);
+            if (pendingMessage.emosi) {
+              setEmosiAika({ emosi: pendingMessage.emosi, id: Date.now() });
+            }
             setPendingMessage(null);
             setIsLoading(false);
             resetIdleTimer();
