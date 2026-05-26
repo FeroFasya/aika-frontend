@@ -6,12 +6,12 @@ import { retargetAnimationFromUrl } from 'vrm-mixamo-retarget';
 import * as THREE from 'three';
 
 const animationFiles = {
-  santai: ['/animations/santai/Happy.fbx', '/animations/santai/Idle.fbx', '/animations/santai/LookAround.fbx'], 
+  santai: ['/animations/santai/Happy.fbx', '/animations/santai/Idle.fbx', '/animations/santai/LookAround.fbx'],
   marah: ['/animations/marah/angry.fbx', '/animations/marah/StandingArguing.fbx', '/animations/marah/No.fbx'],
   malu: ['/animations/malu/Bashful.fbx', '/animations/malu/Talking.fbx', '/animations/malu/Thinking.fbx'],
   sedih: ['/animations/sedih/Sad.fbx', '/animations/sedih/rejected.fbx', '/animations/sedih/Pouting.fbx'],
-  goda: ['/animations/goda/Crazy.fbx', '/animations/goda/Petting.fbx', '/animations/marah/angry.fbx'],
-  acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx'] 
+  goda: ['/animations/goda/Crazy.fbx', '/animations/malu/Bashful.fbx', '/animations/marah/angry.fbx', '/animations/santai/Happy.fbx'],
+  acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx']
 };
 
 export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl }) {
@@ -34,10 +34,10 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
     if (!audioCtxRef.current) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       audioCtxRef.current = window.globalAudioContext || new AudioContext();
-      
+
       analyserRef.current = audioCtxRef.current.createAnalyser();
       analyserRef.current.fftSize = 256;
-      
+
       const source = audioCtxRef.current.createMediaElementSource(audioElement);
       source.connect(analyserRef.current);
       analyserRef.current.connect(audioCtxRef.current.destination);
@@ -48,11 +48,11 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
     }
 
     audioElement.src = audioUrl;
-    
+
     if (audioCtxRef.current.state === 'suspended') {
       audioCtxRef.current.resume();
     }
-    
+
     audioElement.play().catch(e => console.error("Autoplay diblokir:", e));
 
   }, [audioUrl]);
@@ -132,7 +132,7 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
       }
       currentActionRef.current = action;
       console.log(`🎬 Memainkan animasi: ${randomFile} (Loop: ${targetEmosi === 'santai' ? 'Repeat' : 'Once'})`);
-      
+
       // Beri tahu komponen bahwa animasi pertama sudah siap dimainkan
       if (!isAnimReady) setIsAnimReady(true);
     };
@@ -158,7 +158,7 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
     const playIdle = () => {
       const files = animationFiles['santai'];
       const randomFile = files[Math.floor(Math.random() * files.length)];
-      
+
       const doPlay = (clip) => {
         const action = mixerRef.current.clipAction(clip);
         action.reset();
@@ -235,7 +235,7 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
       // --- SISTEM AUDIO LIPSYNC ---
       if (analyserRef.current && dataArrayRef.current && audioRef.current && !audioRef.current.paused) {
         analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-        
+
         let sum = 0;
         let highFreqSum = 0;
         const halfLength = Math.floor(dataArrayRef.current.length / 2);
@@ -244,18 +244,18 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
           sum += dataArrayRef.current[i];
           if (i > halfLength) highFreqSum += dataArrayRef.current[i];
         }
-        
+
         let volume = sum / dataArrayRef.current.length;
         let highFreqVolume = highFreqSum / halfLength;
-        
+
         // Vokal 'A' dari frekuensi keseluruhan
         let mouthAa = Math.min(1, Math.max(0, (volume - 20) / 60));
         // Vokal 'I' / meringis dari frekuensi tinggi (suara s, t, i, e)
         let mouthIh = Math.min(1, Math.max(0, (highFreqVolume - 10) / 40));
-        
+
         const currentAa = vrm.expressionManager.getValue('aa') || 0;
         const currentIh = vrm.expressionManager.getValue('ih') || 0;
-        
+
         // Kecepatan lerp diturunkan ke 12 agar lebih smooth, tidak patah-patah
         vrm.expressionManager.setValue('aa', THREE.MathUtils.lerp(currentAa, mouthAa, 12 * delta));
         vrm.expressionManager.setValue('ih', THREE.MathUtils.lerp(currentIh, mouthIh, 12 * delta));
