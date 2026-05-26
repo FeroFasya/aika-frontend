@@ -63,6 +63,11 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
 
 function TypewriterText({ text, onComplete }) {
   const [displayedText, setDisplayedText] = useState("");
+  const onCompleteRef = useRef(onComplete);
+
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
   
   useEffect(() => {
     setDisplayedText("");
@@ -75,18 +80,18 @@ function TypewriterText({ text, onComplete }) {
       i++;
       if (i >= text.length) {
         clearInterval(interval);
-        // Jeda 2 detik setelah selesai ngetik sebelum pindah ke kotak selanjutnya
+        // Jeda 3.5 detik setelah selesai ngetik sebelum pindah ke kotak selanjutnya
         timeoutId = setTimeout(() => {
-          if (onComplete) onComplete();
-        }, 2000);
+          if (onCompleteRef.current) onCompleteRef.current();
+        }, 3500);
       }
-    }, 40); // 40ms per huruf (kecepatan ngetik visual novel)
+    }, 50); // 50ms per huruf (kecepatan ngetik lambat natural)
     
     return () => {
       clearInterval(interval);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [text, onComplete]);
+  }, [text]);
 
   return <span>{displayedText}</span>;
 }
@@ -153,6 +158,7 @@ function App() {
   // --- REFS UNTUK MENGHINDARI STALE STATE PADA TIMER ---
   const latestChatRef = useRef(daftarChat);
   const idleTimerRef = useRef(null);
+  const isAikaBusyRef = useRef(false);
 
   useEffect(() => {
     latestChatRef.current = daftarChat;
@@ -268,6 +274,8 @@ function App() {
 
   const resetIdleTimer = () => {
     if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    if (isAikaBusyRef.current) return; // Jangan mulai timer saat Aika masih ngomong/ngetik
+
     idleTimerRef.current = setTimeout(() => {
       // Trigger idle setelah 60 detik
       const promptRahasia = "(Sistem: User diam saja selama 1 menit dan mendiamkanmu. Coba sapa dia, goda dia, atau cari perhatiannya. Gunakan emosi [acak], [goda], atau [sedih]. Jangan sebut ini pesan dari sistem, bertingkahlah natural menyapa/mengeluh)";
@@ -406,6 +414,16 @@ function App() {
   
   // Disable input saat AI sedang berpikir, berbicara, mengetik teks, atau ada pesan pending
   const isInputDisabled = isLoading || isAudioPlaying || isTextTyping || pendingMessage !== null;
+
+  // Sinkronisasi status sibuk untuk Idle Timer
+  useEffect(() => {
+    isAikaBusyRef.current = isInputDisabled;
+    if (isInputDisabled) {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    } else {
+      resetIdleTimer();
+    }
+  }, [isInputDisabled]);
 
   // Fungsi untuk memicu kotak teks selanjutnya
   const handleChunkComplete = useCallback(() => {
