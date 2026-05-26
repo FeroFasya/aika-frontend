@@ -11,10 +11,11 @@ const animationFiles = {
   malu: ['/animations/malu/Bashful.fbx', '/animations/malu/Talking.fbx', '/animations/malu/Thinking.fbx'],
   sedih: ['/animations/sedih/Sad.fbx', '/animations/sedih/rejected.fbx', '/animations/sedih/Pouting.fbx'],
   goda: ['/animations/goda/Crazy.fbx', '/animations/malu/Bashful.fbx', '/animations/marah/angry.fbx', '/animations/santai/Happy.fbx'],
-  acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx']
+  acak: ['/animations/acak/Yawn.fbx', '/animations/acak/Thankful.fbx', '/animations/acak/Waving.fbx'],
+  talk: ['/animations/talk/Talking_1.fbx', '/animations/talk/Talking_2.fbx', '/animations/talk/Talking_3.fbx']
 };
 
-export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl }) {
+export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl, isAudioPlaying }) {
   const [vrm, setVrm] = useState(null);
   const [isAnimReady, setIsAnimReady] = useState(false);
 

@@ -81,6 +81,7 @@ function App() {
   const [isPhoneMode, setIsPhoneMode] = useState(false);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [pendingMessage, setPendingMessage] = useState(null);
+  const [chatMode, setChatMode] = useState('normal'); // 'normal' atau 'learn'
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -107,7 +108,8 @@ function App() {
           message: pesanTeks,
           history: latestChatRef.current,
           location: currentLocation,
-          time: currentTimeString
+          time: currentTimeString,
+          mode: chatMode
         })
       });
       const data = await respon.json();
@@ -373,7 +375,7 @@ function App() {
             color={isNight ? "#8fa8ff" : "#ffffff"}
           />
           <Suspense fallback={null}>
-            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} />
+            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} />
             <FloatingText 
               text={isPhoneMode ? latestAikaMessage : ""} 
               isVisible={isPhoneMode} 
