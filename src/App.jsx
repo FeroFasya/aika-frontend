@@ -61,6 +61,28 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
   );
 }
 
+function TypewriterText({ text }) {
+  const [displayedText, setDisplayedText] = useState("");
+  
+  useEffect(() => {
+    setDisplayedText("");
+    if (!text) return;
+
+    let i = 0;
+    const interval = setInterval(() => {
+      setDisplayedText(text.slice(0, i + 1));
+      i++;
+      if (i >= text.length) {
+        clearInterval(interval);
+      }
+    }, 40); // 40ms per huruf (kecepatan ngetik visual novel)
+    
+    return () => clearInterval(interval);
+  }, [text]);
+
+  return <span>{displayedText}</span>;
+}
+
 function ResponsiveCamera() {
   const { camera } = useThree();
   
@@ -115,7 +137,6 @@ function App() {
   const [chatMode, setChatMode] = useState('normal'); // 'normal' atau 'learn'
   const [textChunks, setTextChunks] = useState([]);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
-  const [chunkTimings, setChunkTimings] = useState([]);
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -196,7 +217,6 @@ function App() {
         setPendingMessage(newMessage);
         setTextChunks(chunks);
         setCurrentChunkIndex(0);
-        setChunkTimings([]); // Akan dihitung saat audio onPlaying
         setAudioUrl(audioTtsUrl);
         // Fallback: Jika setelah 4 detik suara tidak mau main, paksa munculkan teks & animasi
         setTimeout(() => {
@@ -351,7 +371,7 @@ function App() {
 
   const handleKirim = async (e) => {
     e.preventDefault();
-    if (!inputPesan.trim()) return;
+    if (!inputPesan.trim() || isInputDisabled) return;
 
     const pesanFero = inputPesan;
     const newFeroMessage = {
@@ -372,6 +392,9 @@ function App() {
 
   // Ambil pesan terakhir dari Aika
   const latestAikaMessage = [...daftarChat].reverse().find(msg => msg.role === 'aika')?.text || "...";
+  
+  // Disable input saat AI sedang berpikir, berbicara, atau ada pesan pending
+  const isInputDisabled = isLoading || isAudioPlaying || pendingMessage !== null;
 
   return (
     <div className="relative w-full h-screen font-sans overflow-hidden bg-black">
@@ -383,7 +406,6 @@ function App() {
         className="hidden" 
         onPlaying={(e) => {
           setIsAudioPlaying(true);
-          const audioEl = e.target;
           
           if (pendingMessage) {
             setDaftarChat((prev) => [...prev, pendingMessage]);
@@ -393,37 +415,28 @@ function App() {
             setPendingMessage(null);
             setIsLoading(false);
             resetIdleTimer();
-
-            // Hitung timing teleprompter
-            if (pendingMessage.chunks && pendingMessage.chunks.length > 1) {
-              const totalDuration = audioEl.duration;
-              const chunks = pendingMessage.chunks;
-              const totalLength = chunks.join(" ").length;
-              
-              const timings = [];
-              let accumulatedTime = 0;
-              
-              for (let i = 0; i < chunks.length; i++) {
-                timings.push({ time: accumulatedTime, index: i });
-                const chunkDuration = (chunks[i].length / totalLength) * totalDuration;
-                accumulatedTime += chunkDuration;
-              }
-              setChunkTimings(timings);
-            } else {
-              setChunkTimings([]);
-            }
           }
         }}
         onTimeUpdate={(e) => {
-          if (chunkTimings.length > 0) {
-            const currentTime = e.target.currentTime;
+          const audioEl = e.target;
+          if (textChunks.length > 1 && audioEl.duration && !isNaN(audioEl.duration) && audioEl.duration !== Infinity) {
+            const totalDuration = audioEl.duration;
+            const totalLength = textChunks.join(" ").length;
+            const currentTime = audioEl.currentTime;
+
+            let accumulatedTime = 0;
             let activeIndex = 0;
-            for (let i = 0; i < chunkTimings.length; i++) {
-              if (currentTime >= chunkTimings[i].time) {
-                activeIndex = chunkTimings[i].index;
+
+            for (let i = 0; i < textChunks.length; i++) {
+              const chunkDuration = (textChunks[i].length / totalLength) * totalDuration;
+              accumulatedTime += chunkDuration;
+              if (currentTime <= accumulatedTime) {
+                activeIndex = i;
+                break;
               }
             }
-            if (activeIndex !== currentChunkIndex) {
+
+            if (activeIndex !== currentChunkIndex && activeIndex < textChunks.length) {
               setCurrentChunkIndex(activeIndex);
             }
           }
@@ -530,8 +543,8 @@ function App() {
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.4s'}}></div>
                 </div>
               ) : (
-                <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide animate-[fadeInText_0.5s_ease-out]">
-                  {textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage}
+                <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide">
+                  <TypewriterText text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage} />
                 </p>
               )}
             </div>
@@ -542,7 +555,7 @@ function App() {
                 <button
                   type="button"
                   onClick={toggleListen}
-                  disabled={isLoading}
+                  disabled={isInputDisabled}
                   className={`p-2.5 md:p-3 rounded-lg md:rounded-xl mr-1 transition-colors duration-200 shrink-0 ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'bg-white/5 text-gray-400 hover:text-white hover:bg-white/10'}`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -558,13 +571,13 @@ function App() {
                     setInputPesan(e.target.value);
                     setFeroTyping(e.target.value.length > 0);
                   }}
-                  disabled={isLoading}
-                  placeholder={isListening ? "Mendengarkan..." : "Balas pesan Aika..."}
-                  className="w-full bg-transparent text-white px-2 py-2 md:py-3 outline-none text-sm placeholder-zinc-500"
+                  disabled={isInputDisabled}
+                  placeholder={isListening ? "Mendengarkan..." : (isInputDisabled ? "Aika sedang berbicara..." : "Balas pesan Aika...")}
+                  className="w-full bg-transparent text-white px-2 py-2 md:py-3 outline-none text-sm placeholder-zinc-500 disabled:opacity-50"
                 />
                 <button
                   type="submit"
-                  disabled={isLoading || !inputPesan.trim()}
+                  disabled={isInputDisabled || !inputPesan.trim()}
                   className="bg-teal-500/20 hover:bg-teal-500/40 text-teal-300 border border-teal-500/30 p-2.5 md:p-3 rounded-lg md:rounded-xl ml-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
