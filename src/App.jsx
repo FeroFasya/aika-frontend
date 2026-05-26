@@ -218,9 +218,10 @@ function App() {
     };
   }, []);
 
-  // Inisialisasi Global Audio Context agar tidak diblokir (Autoplay Policy)
+  // Inisialisasi Global Audio Context & Elemen Audio agar tidak diblokir (Autoplay Policy In-App Browser)
   useEffect(() => {
     const unlockAudio = () => {
+      // 1. Unlock Audio Context
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!window.globalAudioContext) {
         window.globalAudioContext = new AudioContext();
@@ -228,9 +229,26 @@ function App() {
       if (window.globalAudioContext.state === 'suspended') {
         window.globalAudioContext.resume();
       }
+
+      // 2. Unlock Audio Element (Penting untuk Instagram/LinkedIn browser)
+      const audioElement = document.getElementById('aika-voice-player');
+      if (audioElement && !window.audioUnlocked) {
+        // Mainkan suara kosong 1 mili-detik untuk "menipu" browser bahwa user sudah mengizinkan audio
+        audioElement.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        audioElement.play().then(() => {
+          window.audioUnlocked = true;
+        }).catch(e => console.log("Unlock audio tertunda:", e));
+      }
     };
-    window.addEventListener('click', unlockAudio);
-    return () => window.removeEventListener('click', unlockAudio);
+    
+    // Dengarkan sentuhan pertama di mana saja di layar
+    window.addEventListener('click', unlockAudio, { once: true });
+    window.addEventListener('touchstart', unlockAudio, { once: true });
+    
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
   }, []);
 
   const toggleListen = () => {
