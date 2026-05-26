@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, Suspense } from 'react';
+import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import AikaModel from './AikaModel';
@@ -61,7 +61,7 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
   );
 }
 
-function TypewriterText({ text }) {
+function TypewriterText({ text, onComplete }) {
   const [displayedText, setDisplayedText] = useState("");
   
   useEffect(() => {
@@ -69,16 +69,24 @@ function TypewriterText({ text }) {
     if (!text) return;
 
     let i = 0;
+    let timeoutId = null;
     const interval = setInterval(() => {
       setDisplayedText(text.slice(0, i + 1));
       i++;
       if (i >= text.length) {
         clearInterval(interval);
+        // Jeda 2 detik setelah selesai ngetik sebelum pindah ke kotak selanjutnya
+        timeoutId = setTimeout(() => {
+          if (onComplete) onComplete();
+        }, 2000);
       }
     }, 40); // 40ms per huruf (kecepatan ngetik visual novel)
     
-    return () => clearInterval(interval);
-  }, [text]);
+    return () => {
+      clearInterval(interval);
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [text, onComplete]);
 
   return <span>{displayedText}</span>;
 }
@@ -137,6 +145,7 @@ function App() {
   const [chatMode, setChatMode] = useState('normal'); // 'normal' atau 'learn'
   const [textChunks, setTextChunks] = useState([]);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const [isTextTyping, setIsTextTyping] = useState(false);
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -217,6 +226,7 @@ function App() {
         setPendingMessage(newMessage);
         setTextChunks(chunks);
         setCurrentChunkIndex(0);
+        setIsTextTyping(true); // Mulai kunci input
         setAudioUrl(audioTtsUrl);
         // Fallback: Jika setelah 4 detik suara tidak mau main, paksa munculkan teks & animasi
         setTimeout(() => {
@@ -235,6 +245,7 @@ function App() {
         // Jika tidak ada suara (error tts), langsung munculkan teks & animasi
         setTextChunks(chunks);
         setCurrentChunkIndex(0);
+        setIsTextTyping(true);
         setDaftarChat((prev) => [...prev, newMessage]);
         setEmosiAika({ emosi: newMessage.emosi, id: Date.now() });
         setIsLoading(false);
@@ -393,8 +404,19 @@ function App() {
   // Ambil pesan terakhir dari Aika
   const latestAikaMessage = [...daftarChat].reverse().find(msg => msg.role === 'aika')?.text || "...";
   
-  // Disable input saat AI sedang berpikir, berbicara, atau ada pesan pending
-  const isInputDisabled = isLoading || isAudioPlaying || pendingMessage !== null;
+  // Disable input saat AI sedang berpikir, berbicara, mengetik teks, atau ada pesan pending
+  const isInputDisabled = isLoading || isAudioPlaying || isTextTyping || pendingMessage !== null;
+
+  // Fungsi untuk memicu kotak teks selanjutnya
+  const handleChunkComplete = useCallback(() => {
+    setCurrentChunkIndex((prev) => {
+      if (prev < textChunks.length - 1) {
+        return prev + 1; // Lanjut ke kotak berikutnya
+      }
+      setIsTextTyping(false); // Selesai semua teks!
+      return prev;
+    });
+  }, [textChunks.length]);
 
   return (
     <div className="relative w-full h-screen font-sans overflow-hidden bg-black">
@@ -415,30 +437,6 @@ function App() {
             setPendingMessage(null);
             setIsLoading(false);
             resetIdleTimer();
-          }
-        }}
-        onTimeUpdate={(e) => {
-          const audioEl = e.target;
-          if (textChunks.length > 1 && audioEl.duration && !isNaN(audioEl.duration) && audioEl.duration !== Infinity) {
-            const totalDuration = audioEl.duration;
-            const totalLength = textChunks.join(" ").length;
-            const currentTime = audioEl.currentTime;
-
-            let accumulatedTime = 0;
-            let activeIndex = 0;
-
-            for (let i = 0; i < textChunks.length; i++) {
-              const chunkDuration = (textChunks[i].length / totalLength) * totalDuration;
-              accumulatedTime += chunkDuration;
-              if (currentTime <= accumulatedTime) {
-                activeIndex = i;
-                break;
-              }
-            }
-
-            if (activeIndex !== currentChunkIndex && activeIndex < textChunks.length) {
-              setCurrentChunkIndex(activeIndex);
-            }
           }
         }}
         onEnded={() => setIsAudioPlaying(false)}
@@ -544,7 +542,10 @@ function App() {
                 </div>
               ) : (
                 <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide">
-                  <TypewriterText text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage} />
+                  <TypewriterText 
+                    text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage} 
+                    onComplete={textChunks.length > 0 ? handleChunkComplete : () => setIsTextTyping(false)}
+                  />
                 </p>
               )}
             </div>
