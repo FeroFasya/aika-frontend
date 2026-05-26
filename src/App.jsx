@@ -4,25 +4,56 @@ import { OrbitControls, Html } from '@react-three/drei';
 import AikaModel from './AikaModel';
 import './App.css';
 
+function splitIntoChunks(text, maxWords = 15) {
+  const sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
+  const chunks = [];
+  let currentChunk = "";
+
+  for (const sentence of sentences) {
+    const sentenceWords = sentence.trim().split(" ");
+    const currentChunkWords = currentChunk.trim().split(" ").filter(w => w !== "");
+    
+    if (currentChunkWords.length + sentenceWords.length > maxWords && currentChunkWords.length > 0) {
+      chunks.push(currentChunk.trim());
+      currentChunk = sentence;
+    } else {
+      currentChunk += (currentChunk ? " " : "") + sentence;
+    }
+  }
+  
+  if (currentChunk.trim()) {
+    chunks.push(currentChunk.trim());
+  }
+  
+  return chunks;
+}
+
 function FloatingText({ text, isVisible, isAudioPlaying }) {
   if (!isVisible || !text) return null;
 
-  const characters = text.split('');
+  const words = text.split(' ');
+  let charIndexCounter = 0;
 
   return (
     <Html position={[0, 1.2, 0.4]} center zIndexRange={[100, 0]}>
       <div className="w-[90vw] max-w-[450px] md:max-w-[2000px] text-2xl md:text-3xl tracking-wide leading-snug text-center">
-        {characters.map((char, index) => (
-          <span
-            key={index}
-            className={`inline-block miside-text ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
-            style={{  
-              animationDelay: isAudioPlaying ? `${index * 0.06}s` : `${index * 0.015}s`,
-              whiteSpace: char === ' ' ? 'pre' : 'normal',
-              padding: '2px' // Memberi ruang agar stroke font tidak terpotong
-            }}
-          >
-            {char}
+        {words.map((word, wIdx) => (
+          <span key={wIdx} className="inline-block whitespace-nowrap mr-[0.3em]">
+            {word.split('').map((char, cIdx) => {
+              const globalIdx = charIndexCounter++;
+              return (
+                <span
+                  key={globalIdx}
+                  className={`inline-block miside-text ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
+                  style={{  
+                    animationDelay: isAudioPlaying ? `${globalIdx * 0.05}s` : `${globalIdx * 0.015}s`,
+                    padding: '2px' // Memberi ruang agar stroke font tidak terpotong
+                  }}
+                >
+                  {char}
+                </span>
+              );
+            })}
           </span>
         ))}
       </div>
@@ -82,6 +113,9 @@ function App() {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [pendingMessage, setPendingMessage] = useState(null);
   const [chatMode, setChatMode] = useState('normal'); // 'normal' atau 'learn'
+  const [textChunks, setTextChunks] = useState([]);
+  const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
+  const [chunkTimings, setChunkTimings] = useState([]);
   
   const [timeState, setTimeState] = useState(new Date());
   const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
@@ -146,9 +180,11 @@ function App() {
         ]);
       }
 
+      const chunks = splitIntoChunks(teksIndonesia);
       const newMessage = {
         role: 'aika',
         text: teksIndonesia,
+        chunks: chunks,
         timestamp: new Date(),
         status: MESSAGE_STATUS.RECEIVED,
         id: `msg-${Date.now()}`,
@@ -158,6 +194,9 @@ function App() {
       if (audioTtsUrl) {
         // Tahan pesan di state pending agar teks dan animasi tidak mendahului suara
         setPendingMessage(newMessage);
+        setTextChunks(chunks);
+        setCurrentChunkIndex(0);
+        setChunkTimings([]); // Akan dihitung saat audio onPlaying
         setAudioUrl(audioTtsUrl);
         // Fallback: Jika setelah 4 detik suara tidak mau main, paksa munculkan teks & animasi
         setTimeout(() => {
@@ -174,6 +213,8 @@ function App() {
         }, 4000);
       } else {
         // Jika tidak ada suara (error tts), langsung munculkan teks & animasi
+        setTextChunks(chunks);
+        setCurrentChunkIndex(0);
         setDaftarChat((prev) => [...prev, newMessage]);
         setEmosiAika({ emosi: newMessage.emosi, id: Date.now() });
         setIsLoading(false);
@@ -340,9 +381,10 @@ function App() {
         id="aika-voice-player" 
         crossOrigin="anonymous" 
         className="hidden" 
-        onPlaying={() => {
+        onPlaying={(e) => {
           setIsAudioPlaying(true);
-          // Saat suara benar-benar mulai keluar, barulah kita munculkan teks & animasi!
+          const audioEl = e.target;
+          
           if (pendingMessage) {
             setDaftarChat((prev) => [...prev, pendingMessage]);
             if (pendingMessage.emosi) {
@@ -351,6 +393,39 @@ function App() {
             setPendingMessage(null);
             setIsLoading(false);
             resetIdleTimer();
+
+            // Hitung timing teleprompter
+            if (pendingMessage.chunks && pendingMessage.chunks.length > 1) {
+              const totalDuration = audioEl.duration;
+              const chunks = pendingMessage.chunks;
+              const totalLength = chunks.join(" ").length;
+              
+              const timings = [];
+              let accumulatedTime = 0;
+              
+              for (let i = 0; i < chunks.length; i++) {
+                timings.push({ time: accumulatedTime, index: i });
+                const chunkDuration = (chunks[i].length / totalLength) * totalDuration;
+                accumulatedTime += chunkDuration;
+              }
+              setChunkTimings(timings);
+            } else {
+              setChunkTimings([]);
+            }
+          }
+        }}
+        onTimeUpdate={(e) => {
+          if (chunkTimings.length > 0) {
+            const currentTime = e.target.currentTime;
+            let activeIndex = 0;
+            for (let i = 0; i < chunkTimings.length; i++) {
+              if (currentTime >= chunkTimings[i].time) {
+                activeIndex = chunkTimings[i].index;
+              }
+            }
+            if (activeIndex !== currentChunkIndex) {
+              setCurrentChunkIndex(activeIndex);
+            }
           }
         }}
         onEnded={() => setIsAudioPlaying(false)}
@@ -377,7 +452,7 @@ function App() {
           <Suspense fallback={null}>
             <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} />
             <FloatingText 
-              text={isPhoneMode ? latestAikaMessage : ""} 
+              text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")} 
               isVisible={isPhoneMode} 
               isAudioPlaying={isAudioPlaying} 
             />
@@ -455,8 +530,8 @@ function App() {
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.4s'}}></div>
                 </div>
               ) : (
-                <p key={emosiAika.id} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide animate-[fadeInText_0.5s_ease-out]">
-                  {latestAikaMessage}
+                <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide animate-[fadeInText_0.5s_ease-out]">
+                  {textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage}
                 </p>
               )}
             </div>
