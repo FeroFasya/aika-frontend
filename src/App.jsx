@@ -36,7 +36,7 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
 
   return (
     <Html position={[0, 1.2, 0.4]} center zIndexRange={[100, 0]}>
-      <div className="w-[90vw] max-w-[450px] md:max-w-[2000px] text-2xl md:text-3xl tracking-wide leading-snug text-center">
+      <div key={text} className="w-[90vw] max-w-[450px] md:max-w-[2000px] text-2xl md:text-3xl tracking-wide leading-snug text-center">
         {words.map((word, wIdx) => (
           <span key={wIdx} className="inline-block whitespace-nowrap mr-[0.3em]">
             {word.split('').map((char, cIdx) => {
