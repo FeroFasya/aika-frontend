@@ -404,9 +404,23 @@ function App() {
             <span className="text-pink-500 text-[9px] md:text-[10px] font-bold tracking-[0.2em] uppercase mt-0.5">{modeText}</span>
           </div>
 
-          {/* Nav Pills */}
-          <div className="bg-zinc-900/60 backdrop-blur-md rounded-full p-1.5 flex gap-1 md:gap-2 border border-zinc-700/50 shadow-lg pointer-events-auto">
-            <button className="bg-cyan-400 text-black px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform active:scale-95">ROOM</button>
+          {/* SAKLAR PERSONA & Nav Pills */}
+          <div className="flex flex-col items-center gap-3 pointer-events-auto">
+            {/* Tombol Saklar Persona */}
+            <button 
+              onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
+              className={`px-6 py-2 rounded-full font-bold text-[10px] md:text-xs tracking-widest transition-all shadow-lg ${
+                chatMode === 'learn' 
+                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-2 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]' 
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
+              }`}
+            >
+              {chatMode === 'learn' ? '📖 MODE BELAJAR AKTIF' : '💖 WAIFU MODE AKTIF'}
+            </button>
+
+            {/* Nav Pills */}
+            <div className="bg-zinc-900/60 backdrop-blur-md rounded-full p-1.5 flex gap-1 md:gap-2 border border-zinc-700/50 shadow-lg">
+              <button className="bg-cyan-400 text-black px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform active:scale-95">ROOM</button>
             <button className="text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">KITCHEN</button>
             <button className="hidden sm:block text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">OUTSIDE</button>
             <button className="hidden sm:block text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">LIVING</button>
