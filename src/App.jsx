@@ -164,12 +164,13 @@ function App() {
   const [daftarChat, setDaftarChat] = useState([
     {
       role: 'aika',
-      text: 'ummmm......',
+      text: 'Siapa ya yang masuk ke kamarku? Nama kamu siapa?',
       timestamp: new Date(),
       status: MESSAGE_STATUS.RECEIVED,
       id: 'init-msg'
     }
   ]);
+  const [userName, setUserName] = useState('');
   const [inputPesan, setInputPesan] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [emosiAika, setEmosiAika] = useState({ emosi: 'netral', id: 0 });
@@ -204,7 +205,7 @@ function App() {
   }, [daftarChat]);
 
   // --- SISTEM IDLE (AIKA BOSAN) ---
-  const kirimPesanKeAika = async (pesanTeks, isHidden = false, staticResponse = null) => {
+  const kirimPesanKeAika = async (pesanTeks, isHidden = false, staticResponse = null, overrideName = null) => {
     setIsLoading(true);
 
     const currentTimeString = timeState.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
@@ -227,7 +228,8 @@ function App() {
             history: latestChatRef.current,
             location: currentLocation,
             time: currentTimeString,
-            mode: chatMode
+            mode: chatMode,
+            name: overrideName || userName || "User"
           })
         });
         const data = await respon.json();
@@ -458,8 +460,9 @@ function App() {
     setTimeout(() => {
       setCurrentLocation(targetPlace);
       // Trigger sistem tersembunyi ke LLM
-      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: User baru saja mengajakmu pindah ke lokasi: ${targetPlace}. 
-Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, seolah kamu baru saja tiba di sini bersamanya. JANGAN BERITAHU User bahwa ini adalah pesan sistem.`;
+      const currName = userName || "User";
+      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: ${currName} baru saja mengajakmu pindah ke lokasi: ${targetPlace}. 
+Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, seolah kamu baru saja tiba di sini bersamanya. JANGAN BERITAHU ${currName} bahwa ini adalah pesan sistem.`;
 
       // Panggil fungsi kirimPesanKeAika dengan isHidden = true
       kirimPesanKeAika(hiddenSystemMessage, true);
@@ -485,6 +488,30 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
     if (!inputPesan.trim() || isInputDisabled) return;
 
     const pesanFero = inputPesan;
+
+    // --- MODE PERKENALAN (NAMA BELUM DISET) ---
+    if (!userName) {
+      setUserName(pesanFero);
+      
+      const newFeroMessage = {
+        role: 'fero',
+        text: pesanFero,
+        chunks: splitIntoChunks(pesanFero),
+        timestamp: new Date(),
+        status: MESSAGE_STATUS.SENT,
+        id: `msg-${Date.now()}`
+      };
+      setDaftarChat((prev) => [...prev, newFeroMessage]);
+      setInputPesan('');
+      
+      // Kirim hidden prompt ke LLM untuk merespons nama baru
+      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: Pengguna baru saja memberitahu bahwa namanya adalah ${pesanFero}. Berikan sapaan hangat, selamat datang, dan panggil namanya! JANGAN BERITAHU ${pesanFero} bahwa ini adalah pesan sistem.`;
+      
+      await kirimPesanKeAika(hiddenSystemMessage, true, null, pesanFero);
+      return;
+    }
+
+    // --- MODE NORMAL ---
     const newFeroMessage = {
       role: 'fero',
       text: pesanFero,
@@ -502,7 +529,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
   };
 
   // Ambil pesan terakhir dari Aika
-  const latestAikaMessage = [...daftarChat].reverse().find(msg => msg.role === 'aika')?.text || "...";
+  const latestAikaMessage = [...daftarChat].reverse().find(msg => msg.role === 'aika')?.text || "Halo! Senang sekali bisa bertemu denganmu. Siapa namamu?";
 
   // Disable input saat AI sedang berpikir, berbicara, mengetik teks, atau ada pesan pending
   const isInputDisabled = isLoading || isAudioPlaying || isTextTyping || pendingMessage !== null;
