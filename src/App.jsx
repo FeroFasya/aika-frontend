@@ -458,8 +458,8 @@ function App() {
     setTimeout(() => {
       setCurrentLocation(targetPlace);
       // Trigger sistem tersembunyi ke LLM
-      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: Fero baru saja mengajakmu pindah ke lokasi: ${targetPlace}. 
-Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, seolah kamu baru saja tiba di sini bersamanya. JANGAN BERITAHU Fero bahwa ini adalah pesan sistem.`;
+      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: User baru saja mengajakmu pindah ke lokasi: ${targetPlace}. 
+Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, seolah kamu baru saja tiba di sini bersamanya. JANGAN BERITAHU User bahwa ini adalah pesan sistem.`;
 
       // Panggil fungsi kirimPesanKeAika dengan isHidden = true
       kirimPesanKeAika(hiddenSystemMessage, true);
