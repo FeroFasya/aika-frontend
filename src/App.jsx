@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, Suspense, useCallback } from 'react';
+import { useState, useRef, useEffect, Suspense, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Html } from '@react-three/drei';
 import AikaModel from './AikaModel';
@@ -61,40 +61,72 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
   );
 }
 
-function TypewriterText({ text, onComplete }) {
+const TypewriterText = forwardRef(({ text, onComplete }, ref) => {
   const [displayedText, setDisplayedText] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const [isWaiting, setIsWaiting] = useState(false);
+
   const onCompleteRef = useRef(onComplete);
+  const intervalRef = useRef(null);
+  const timeoutRef = useRef(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
+
+  // Expose fungsi skip ke parent (App.jsx)
+  useImperativeHandle(ref, () => ({
+    skip: () => {
+      if (isTyping) {
+        // Jika sedang ngetik, langsung tampilkan semua teks, hentikan interval ngetik, dan mulai timer jeda
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setDisplayedText(text);
+        setIsTyping(false);
+        setIsWaiting(true);
+        timeoutRef.current = setTimeout(() => {
+          setIsWaiting(false);
+          if (onCompleteRef.current) onCompleteRef.current();
+        }, 3500);
+      } else if (isWaiting) {
+        // Jika teks sudah utuh dan sedang menunggu jeda 3.5 detik, langsung skip jeda
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        setIsWaiting(false);
+        if (onCompleteRef.current) onCompleteRef.current();
+      }
+    }
+  }));
   
   useEffect(() => {
     setDisplayedText("");
     if (!text) return;
 
+    setIsTyping(true);
+    setIsWaiting(false);
     let i = 0;
-    let timeoutId = null;
-    const interval = setInterval(() => {
+    
+    intervalRef.current = setInterval(() => {
       setDisplayedText(text.slice(0, i + 1));
       i++;
       if (i >= text.length) {
-        clearInterval(interval);
+        clearInterval(intervalRef.current);
+        setIsTyping(false);
+        setIsWaiting(true);
         // Jeda 3.5 detik setelah selesai ngetik sebelum pindah ke kotak selanjutnya
-        timeoutId = setTimeout(() => {
+        timeoutRef.current = setTimeout(() => {
+          setIsWaiting(false);
           if (onCompleteRef.current) onCompleteRef.current();
         }, 3500);
       }
     }, 50); // 50ms per huruf (kecepatan ngetik lambat natural)
     
     return () => {
-      clearInterval(interval);
-      if (timeoutId) clearTimeout(timeoutId);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [text]);
 
   return <span>{displayedText}</span>;
-}
+});
 
 function ResponsiveCamera() {
   const { camera } = useThree();
@@ -159,6 +191,7 @@ function App() {
   const latestChatRef = useRef(daftarChat);
   const idleTimerRef = useRef(null);
   const isAikaBusyRef = useRef(false);
+  const typewriterRef = useRef(null); // Ref untuk mengontrol TypewriterText (Skip Narasi)
 
   useEffect(() => {
     latestChatRef.current = daftarChat;
@@ -436,6 +469,13 @@ function App() {
     });
   }, [textChunks.length]);
 
+  // Fungsi untuk menskip narasi
+  const handleSkipVN = () => {
+    if (typewriterRef.current && isTextTyping) {
+      typewriterRef.current.skip();
+    }
+  };
+
   return (
     <div className="relative w-full h-screen font-sans overflow-hidden bg-black">
       
@@ -551,16 +591,21 @@ function App() {
             </div>
 
             {/* TEXT DIALOGUE */}
-            <div className="mt-3 md:mt-2 min-h-[60px] md:min-h-[80px]">
+            <div 
+              className="mt-3 md:mt-2 min-h-[60px] md:min-h-[80px] cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors"
+              onClick={handleSkipVN}
+              title="Klik untuk mempercepat / skip teks"
+            >
               {isLoading ? (
-                 <div className="flex items-center gap-3 mt-4">
+                 <div className="flex items-center gap-3 mt-2">
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0s'}}></div>
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
                   <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.4s'}}></div>
                 </div>
               ) : (
-                <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide">
+                <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide select-none">
                   <TypewriterText 
+                    ref={typewriterRef}
                     text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage} 
                     onComplete={textChunks.length > 0 ? handleChunkComplete : () => setIsTextTyping(false)}
                   />
