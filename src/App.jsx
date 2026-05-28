@@ -12,7 +12,7 @@ function splitIntoChunks(text, maxWords = 15) {
   for (const sentence of sentences) {
     const sentenceWords = sentence.trim().split(" ");
     const currentChunkWords = currentChunk.trim().split(" ").filter(w => w !== "");
-    
+
     if (currentChunkWords.length + sentenceWords.length > maxWords && currentChunkWords.length > 0) {
       chunks.push(currentChunk.trim());
       currentChunk = sentence;
@@ -20,11 +20,11 @@ function splitIntoChunks(text, maxWords = 15) {
       currentChunk += (currentChunk ? " " : "") + sentence;
     }
   }
-  
+
   if (currentChunk.trim()) {
     chunks.push(currentChunk.trim());
   }
-  
+
   return chunks;
 }
 
@@ -45,7 +45,7 @@ function FloatingText({ text, isVisible, isAudioPlaying, chatMode }) {
                 <span
                   key={globalIdx}
                   className={`inline-block ${chatMode === 'learn' ? 'miside-text-focus' : 'miside-text'} ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
-                  style={{  
+                  style={{
                     animationDelay: isAudioPlaying ? `${globalIdx * 0.05}s` : `${globalIdx * 0.015}s`,
                     padding: '2px' // Memberi ruang agar stroke font tidak terpotong
                   }}
@@ -95,7 +95,7 @@ const TypewriterText = forwardRef(({ text, onComplete }, ref) => {
       }
     }
   }));
-  
+
   useEffect(() => {
     setDisplayedText("");
     if (!text) return;
@@ -103,7 +103,7 @@ const TypewriterText = forwardRef(({ text, onComplete }, ref) => {
     setIsTyping(true);
     setIsWaiting(false);
     let i = 0;
-    
+
     intervalRef.current = setInterval(() => {
       setDisplayedText(text.slice(0, i + 1));
       i++;
@@ -118,7 +118,7 @@ const TypewriterText = forwardRef(({ text, onComplete }, ref) => {
         }, 3500);
       }
     }, 50); // 50ms per huruf (kecepatan ngetik lambat natural)
-    
+
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -130,7 +130,7 @@ const TypewriterText = forwardRef(({ text, onComplete }, ref) => {
 
 function ResponsiveCamera() {
   const { camera } = useThree();
-  
+
   useEffect(() => {
     const handleResize = () => {
       const isDesktop = window.innerWidth >= 768;
@@ -183,9 +183,15 @@ function App() {
   const [textChunks, setTextChunks] = useState([]);
   const [currentChunkIndex, setCurrentChunkIndex] = useState(0);
   const [isTextTyping, setIsTextTyping] = useState(false);
-  
+
   const [timeState, setTimeState] = useState(new Date());
-  const [currentLocation, setCurrentLocation] = useState("Kamar Tidur (Room)");
+  const [currentLocation, setCurrentLocation] = useState("Room");
+
+  // Transisi Tempat
+  const [targetPlace, setTargetPlace] = useState(null);
+  const [showPlaceModal, setShowPlaceModal] = useState(false);
+  const [isLoadingPlace, setIsLoadingPlace] = useState(false);
+  const [aikaOpacity, setAikaOpacity] = useState(1);
 
   // --- REFS UNTUK MENGHINDARI STALE STATE PADA TIMER ---
   const latestChatRef = useRef(daftarChat);
@@ -320,7 +326,7 @@ function App() {
   useEffect(() => {
     resetIdleTimer(); // Mulai timer saat awal
     const handleActivity = () => resetIdleTimer();
-    
+
     window.addEventListener('mousemove', handleActivity);
     window.addEventListener('keydown', handleActivity);
     window.addEventListener('click', handleActivity);
@@ -355,11 +361,11 @@ function App() {
         }).catch(e => console.log("Unlock audio tertunda:", e));
       }
     };
-    
+
     // Dengarkan sentuhan pertama di mana saja di layar
     window.addEventListener('click', unlockAudio, { once: true });
     window.addEventListener('touchstart', unlockAudio, { once: true });
-    
+
     return () => {
       window.removeEventListener('click', unlockAudio);
       window.removeEventListener('touchstart', unlockAudio);
@@ -387,7 +393,7 @@ function App() {
     recognition.onresult = async (event) => {
       const transcript = event.results[0][0].transcript;
       setIsListening(false); // Matikan visual mikrofon langsung
-      
+
       const newFeroMessage = {
         role: 'fero',
         text: transcript,
@@ -395,10 +401,10 @@ function App() {
         status: MESSAGE_STATUS.SENDING,
         id: `msg-${Date.now()}`
       };
-      
+
       setDaftarChat((prev) => [...prev, newFeroMessage]);
       resetIdleTimer();
-      
+
       // Auto-send ke Aika!
       await kirimPesanKeAika(transcript, false);
     };
@@ -419,7 +425,66 @@ function App() {
   const timeString = `${hours.toString().padStart(2, '0')}.${minutes.toString().padStart(2, '0')}`;
   const isNight = hours >= 18 || hours < 6;
   const modeText = isNight ? 'NIGHT MODE' : 'DAY MODE';
-  const backgroundUrl = isNight ? '/backgrounds/room/room_night.png' : '/backgrounds/room/room_normal.png';
+  
+  // Logic Background Dinamis
+  const locLower = currentLocation.toLowerCase();
+  const backgroundUrl = isNight 
+    ? `/backgrounds/${locLower}/${locLower}_night.png` 
+    : `/backgrounds/${locLower}/${locLower === 'room' ? 'room_normal' : locLower}.png`;
+
+  // --- LOGIKA TRANSISI TEMPAT ---
+  const handlePlaceClick = (placeName) => {
+    if (placeName === currentLocation || isLoading || isAudioPlaying) return;
+    setTargetPlace(placeName);
+    setShowPlaceModal(true);
+  };
+
+  const confirmPlaceChange = () => {
+    setShowPlaceModal(false);
+    setIsLoadingPlace(true);
+    setAikaOpacity(0); // Aika sembunyi saat loading
+
+    // Simulasi Loading Screen (misal: 1 detik untuk membersihkan state lama)
+    setTimeout(() => {
+      setCurrentLocation(targetPlace);
+      
+      // Kirim pesan interupsi (Static text dari Aika) sesuai tempat
+      let staticAikaResponse = "";
+      if (targetPlace === "Kitchen") staticAikaResponse = "Kamu mau masak apa? Aku temenin ya!";
+      if (targetPlace === "Living") staticAikaResponse = "Wah, ruang tamunya luas... kamu bosen ya di kamar terus?";
+      if (targetPlace === "Outside") staticAikaResponse = "Udara di luar segar banget! Fero suka pemandangannya?";
+      if (targetPlace === "Room") staticAikaResponse = "Kembali ke kamar... kasurnya memanggil hahaha.";
+
+      // Push chat baru sebagai 'Aika' (tanpa fetch LLM dulu, langsung munculin teks static)
+      // Ini membuat Aika langsung "merespon" perpindahan tempat.
+      const newAikaMessage = {
+        role: 'aika',
+        text: staticAikaResponse,
+        chunks: splitIntoChunks(staticAikaResponse),
+        timestamp: new Date(),
+        status: MESSAGE_STATUS.RECEIVED,
+        id: `msg-${Date.now()}`,
+        emosi: 'santai'
+      };
+
+      setDaftarChat((prev) => [...prev, newAikaMessage]);
+      setPendingMessage(newAikaMessage); // Trigger TTS dan UI render teks
+
+      // Angkat layar loading setelah 1 detik
+      setTimeout(() => {
+        setIsLoadingPlace(false);
+        // Aika fade-in setelah 1 detik layar kebuka
+        setTimeout(() => {
+          setAikaOpacity(1);
+        }, 1000);
+      }, 1000);
+    }, 1000);
+  };
+
+  const cancelPlaceChange = () => {
+    setShowPlaceModal(false);
+    setTargetPlace(null);
+  };
 
   const handleKirim = async (e) => {
     e.preventDefault();
@@ -433,7 +498,7 @@ function App() {
       status: MESSAGE_STATUS.SENDING,
       id: `msg-${Date.now()}`
     };
-    
+
     setDaftarChat((prev) => [...prev, newFeroMessage]);
     setInputPesan('');
     setFeroTyping(false);
@@ -444,7 +509,7 @@ function App() {
 
   // Ambil pesan terakhir dari Aika
   const latestAikaMessage = [...daftarChat].reverse().find(msg => msg.role === 'aika')?.text || "...";
-  
+
   // Disable input saat AI sedang berpikir, berbicara, mengetik teks, atau ada pesan pending
   const isInputDisabled = isLoading || isAudioPlaying || isTextTyping || pendingMessage !== null;
 
@@ -478,15 +543,15 @@ function App() {
 
   return (
     <div className="relative w-full h-screen font-sans overflow-hidden bg-black">
-      
+
       {/* Audio Element Tersembunyi (Aman dari Garbage Collection) */}
-      <audio 
-        id="aika-voice-player" 
-        crossOrigin="anonymous" 
-        className="hidden" 
+      <audio
+        id="aika-voice-player"
+        crossOrigin="anonymous"
+        className="hidden"
         onPlaying={(e) => {
           setIsAudioPlaying(true);
-          
+
           if (pendingMessage) {
             setDaftarChat((prev) => [...prev, pendingMessage]);
             if (pendingMessage.emosi) {
@@ -502,37 +567,37 @@ function App() {
       />
 
       {/* 1. DYNAMIC BACKGROUND LAYER */}
-      <div 
+      <div
         className="absolute inset-0 z-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
         style={{ backgroundImage: `url(${backgroundUrl})` }}
       />
-      
+
       {/* 2. 3D CANVAS LAYER */}
       <div className="absolute inset-0 z-10 pointer-events-none">
         {/* Posisi kamera diatur secara responsif via komponen ResponsiveCamera */}
         <Canvas>
           <ResponsiveCamera />
           <ambientLight intensity={isNight ? 0.4 : 0.9} />
-          <directionalLight 
-            position={[0, 2, 5]} 
-            intensity={isNight ? 0.5 : 1.2} 
+          <directionalLight
+            position={[0, 2, 5]}
+            intensity={isNight ? 0.5 : 1.2}
             color={isNight ? "#8fa8ff" : "#ffffff"}
           />
           <Suspense fallback={null}>
-            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} />
-            <FloatingText 
-              text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")} 
-              isVisible={isPhoneMode} 
-              isAudioPlaying={isAudioPlaying} 
+            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} opacityTarget={aikaOpacity} />
+            <FloatingText
+              text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")}
+              isVisible={isPhoneMode}
+              isAudioPlaying={isAudioPlaying}
               chatMode={chatMode}
             />
           </Suspense>
           {/* OrbitControls dikunci agar Aika tidak bisa diputar, tapi targetnya dipastikan ke dada/wajah */}
-          <OrbitControls 
-            target={[0, 1.25, 0]} 
-            enableRotate={false} 
-            enablePan={false} 
-            enableZoom={false} 
+          <OrbitControls
+            target={[0, 1.25, 0]}
+            enableRotate={false}
+            enablePan={false}
+            enableZoom={false}
           />
         </Canvas>
       </div>
@@ -542,10 +607,10 @@ function App() {
 
       {/* 4. UI OVERLAY LAYER */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
-        
+
         {/* TOP BAR */}
         <div className="w-full p-4 md:p-6 flex justify-between items-start">
-          
+
           {/* KIRI: Clock Widget & Saklar Persona */}
           <div className="flex flex-col gap-4 pointer-events-auto">
             {/* Clock Widget */}
@@ -556,13 +621,12 @@ function App() {
 
             {/* Tombol Saklar Persona (HANYA MUNCUL DI PHONE MODE) */}
             {isPhoneMode && (
-              <button 
+              <button
                 onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
-                className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-widest transition-all shadow-lg text-center flex items-center justify-center gap-2 pointer-events-auto ${
-                  chatMode === 'learn' 
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
+                className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-widest transition-all shadow-lg text-center flex items-center justify-center gap-2 pointer-events-auto ${chatMode === 'learn'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
                     : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
-                }`}
+                  }`}
               >
                 {chatMode === 'learn' ? '📚 FOCUS' : '💖 COZY'}
               </button>
@@ -571,10 +635,10 @@ function App() {
 
           {/* TENGAH: Nav Pills */}
           <div className="bg-zinc-900/60 backdrop-blur-md rounded-full p-1.5 flex gap-1 md:gap-2 border border-zinc-700/50 shadow-lg pointer-events-auto">
-            <button className="bg-cyan-400 text-black px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider shadow-[0_0_15px_rgba(34,211,238,0.4)] transition-transform active:scale-95">ROOM</button>
-            <button className="text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">KITCHEN</button>
-            <button className="hidden sm:block text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">OUTSIDE</button>
-            <button className="hidden sm:block text-zinc-400 hover:text-white px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-colors">LIVING</button>
+            <button onClick={() => handlePlaceClick('Room')} className={`${currentLocation === 'Room' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all active:scale-95`}>ROOM</button>
+            <button onClick={() => handlePlaceClick('Living')} className={`${currentLocation === 'Living' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>LIVING</button>
+            <button onClick={() => handlePlaceClick('Outside')} className={`${currentLocation === 'Outside' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>OUTSIDE</button>
+            <button onClick={() => handlePlaceClick('Kitchen')} className={`${currentLocation === 'Kitchen' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>KITCHEN</button>
           </div>
 
           {/* KANAN: Spacer untuk menjaga layout nav tetap di tengah (flex-between) */}
@@ -585,43 +649,39 @@ function App() {
         {/* VISUAL NOVEL TEXTBOX (HANYA MUNCUL JIKA TIDAK DI PHONE MODE) */}
         <div className={`w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
           <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 ${chatMode === 'learn' ? 'border-cyan-500 shadow-[0_10px_30px_rgba(6,182,212,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
-            
+
             {/* TOP AREA: NAME BADGE & MODE TOGGLE */}
             <div className="absolute -top-4 md:-top-5 left-6 md:left-8 right-6 flex items-center justify-between pointer-events-none">
-              
+
               {/* KIRI: NAME BADGE */}
               <div className="flex items-center gap-3">
-                <div className={`px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900 text-white transition-colors duration-500 ${
-                  chatMode === 'learn' ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-pink-500 to-rose-400'
-                }`}>
+                <div className={`px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900 text-white transition-colors duration-500 ${chatMode === 'learn' ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-pink-500 to-rose-400'
+                  }`}>
                   AIKA
                 </div>
-                <div className={`hidden md:block text-xs font-bold tracking-widest uppercase transition-colors duration-500 ${
-                  chatMode === 'learn' ? 'text-cyan-300' : 'text-pink-300'
-                }`}>
+                <div className={`hidden md:block text-xs font-bold tracking-widest uppercase transition-colors duration-500 ${chatMode === 'learn' ? 'text-cyan-300' : 'text-pink-300'
+                  }`}>
                   VIRTUAL COMPANION
                 </div>
               </div>
 
               {/* KANAN: MODE TOGGLE CAPSULE */}
               <div className="pointer-events-auto bg-zinc-900 border-2 border-zinc-700 rounded-full flex items-center p-1 shadow-lg transition-colors">
-                <button 
+                <button
                   onClick={() => setChatMode('normal')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${
-                    chatMode === 'normal' 
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]' 
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${chatMode === 'normal'
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
                       : 'text-zinc-500 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span>💖</span> Cozy
                 </button>
-                <button 
+                <button
                   onClick={() => setChatMode('learn')}
-                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${
-                    chatMode === 'learn' 
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]' 
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${chatMode === 'learn'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]'
                       : 'text-zinc-500 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span>📚</span> Focus
                 </button>
@@ -630,22 +690,22 @@ function App() {
             </div>
 
             {/* TEXT DIALOGUE */}
-            <div 
+            <div
               className="mt-3 md:mt-2 min-h-[60px] md:min-h-[80px] cursor-pointer hover:bg-white/5 p-2 -mx-2 rounded-xl transition-colors"
               onClick={handleSkipVN}
               title="Klik untuk mempercepat / skip teks"
             >
               {isLoading ? (
-                 <div className="flex items-center gap-3 mt-2">
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0s'}}></div>
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0.2s'}}></div>
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0.4s'}}></div>
+                <div className="flex items-center gap-3 mt-2">
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0s' }}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.2s' }}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.4s' }}></div>
                 </div>
               ) : (
                 <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide select-none">
-                  <TypewriterText 
+                  <TypewriterText
                     ref={typewriterRef}
-                    text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage} 
+                    text={textChunks.length > 0 ? textChunks[currentChunkIndex] : latestAikaMessage}
                     onComplete={textChunks.length > 0 ? handleChunkComplete : () => setIsTextTyping(false)}
                   />
                 </p>
@@ -708,9 +768,8 @@ function App() {
             <button
               onClick={toggleListen}
               disabled={isLoading && !isListening}
-              className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-all active:scale-95 ${
-                isListening ? 'bg-pink-500 text-white' : 'bg-zinc-900/80 border border-pink-500/50 text-pink-400 hover:bg-pink-500/20 backdrop-blur-md'
-              }`}
+              className={`relative z-10 w-16 h-16 rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(236,72,153,0.5)] transition-all active:scale-95 ${isListening ? 'bg-pink-500 text-white' : 'bg-zinc-900/80 border border-pink-500/50 text-pink-400 hover:bg-pink-500/20 backdrop-blur-md'
+                }`}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
             </button>
@@ -725,6 +784,27 @@ function App() {
         </div>
 
       </div>
+
+      {/* --- MODAL KONFIRMASI TEMPAT --- */}
+      {showPlaceModal && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div className="bg-zinc-900 border-2 border-zinc-700 p-6 md:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
+            <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Pindah Lokasi?</h3>
+            <p className="text-zinc-400 mb-6 text-sm md:text-base">Apakah kamu ingin pergi ke <span className="text-cyan-400 font-bold">{targetPlace}</span>?</p>
+            <div className="flex gap-4 justify-center">
+              <button onClick={cancelPlaceChange} className="px-6 py-2 rounded-full font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Batal</button>
+              <button onClick={confirmPlaceChange} className="px-6 py-2 rounded-full font-bold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all active:scale-95">Pergi</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* --- LAYAR LOADING TRANSISI --- */}
+      <div className={`absolute inset-0 z-[110] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${isLoadingPlace ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        <div className="w-12 h-12 border-4 border-zinc-800 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-cyan-400 font-bold tracking-widest text-sm animate-pulse">MEMUAT LOKASI...</p>
+      </div>
+
     </div>
   );
 }

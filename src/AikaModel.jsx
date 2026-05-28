@@ -15,7 +15,7 @@ const animationFiles = {
   talk: ['/animations/talk/Talking_1.fbx', '/animations/talk/Talking_2.fbx', '/animations/talk/Talking_3.fbx']
 };
 
-export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl, isAudioPlaying }) {
+export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audioUrl, isAudioPlaying, opacityTarget = 1 }) {
   const [vrm, setVrm] = useState(null);
   const [isAnimReady, setIsAnimReady] = useState(false);
 
@@ -83,6 +83,25 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
       (gltf) => {
         const loadedVrm = gltf.userData.vrm;
         loadedVrm.scene.rotation.y = Math.PI;
+
+        // Persiapan Fade-in
+        loadedVrm.scene.traverse((child) => {
+          if (child.isMesh && child.material) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.frustumCulled = false;
+            
+            if (Array.isArray(child.material)) {
+              child.material.forEach(mat => {
+                mat.transparent = true;
+                mat.opacity = 0;
+              });
+            } else {
+              child.material.transparent = true;
+              child.material.opacity = 0;
+            }
+          }
+        });
 
         // Inisialisasi Mixer
         mixerRef.current = new THREE.AnimationMixer(loadedVrm.scene);
@@ -284,6 +303,19 @@ export default function AikaModel({ emosiAktif, emosiTrigger, isFeroTyping, audi
       if (mixerRef.current) {
         mixerRef.current.update(delta);
       }
+
+      // --- EFEK FADE IN / OPACITY ---
+      vrm.scene.traverse((child) => {
+        if (child.isMesh && child.material) {
+          if (Array.isArray(child.material)) {
+            child.material.forEach(mat => {
+              mat.opacity = THREE.MathUtils.lerp(mat.opacity, opacityTarget, 3 * delta);
+            });
+          } else {
+            child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, opacityTarget, 3 * delta);
+          }
+        }
+      });
 
       vrm.update(delta);
     }
