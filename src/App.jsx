@@ -28,7 +28,7 @@ function splitIntoChunks(text, maxWords = 15) {
   return chunks;
 }
 
-function FloatingText({ text, isVisible, isAudioPlaying }) {
+function FloatingText({ text, isVisible, isAudioPlaying, chatMode }) {
   if (!isVisible || !text) return null;
 
   const words = text.split(' ');
@@ -44,7 +44,7 @@ function FloatingText({ text, isVisible, isAudioPlaying }) {
               return (
                 <span
                   key={globalIdx}
-                  className={`inline-block miside-text ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
+                  className={`inline-block ${chatMode === 'learn' ? 'miside-text-focus' : 'miside-text'} ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
                   style={{  
                     animationDelay: isAudioPlaying ? `${globalIdx * 0.05}s` : `${globalIdx * 0.015}s`,
                     padding: '2px' // Memberi ruang agar stroke font tidak terpotong
@@ -524,6 +524,7 @@ function App() {
               text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")} 
               isVisible={isPhoneMode} 
               isAudioPlaying={isAudioPlaying} 
+              chatMode={chatMode}
             />
           </Suspense>
           {/* OrbitControls dikunci agar Aika tidak bisa diputar, tapi targetnya dipastikan ke dada/wajah */}
@@ -536,7 +537,12 @@ function App() {
         </Canvas>
       </div>
 
-      {/* 3. UI OVERLAY LAYER */}
+      {/* 3. VIGNETTE OVERLAY (FOCUS MODE ONLY) */}
+      {chatMode === 'learn' && (
+        <div className="absolute inset-0 focus-vignette transition-opacity duration-1000 opacity-100"></div>
+      )}
+
+      {/* 4. UI OVERLAY LAYER */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
         
         {/* TOP BAR */}
@@ -550,17 +556,19 @@ function App() {
               <span className="text-pink-500 text-[9px] md:text-[10px] font-bold tracking-[0.2em] uppercase mt-0.5">{modeText}</span>
             </div>
 
-            {/* Tombol Saklar Persona */}
-            <button 
-              onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
-              className={`px-4 py-2 rounded-xl font-bold text-[10px] md:text-xs tracking-widest transition-all shadow-lg text-center ${
-                chatMode === 'learn' 
-                  ? 'bg-gradient-to-r from-indigo-500 to-purple-600 text-white border-2 border-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.5)]' 
-                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
-              }`}
-            >
-              {chatMode === 'learn' ? '📖 BELAJAR' : '💖 WAIFU'}
-            </button>
+            {/* Tombol Saklar Persona (HANYA MUNCUL DI PHONE MODE) */}
+            {isPhoneMode && (
+              <button 
+                onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
+                className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-widest transition-all shadow-lg text-center flex items-center justify-center gap-2 pointer-events-auto ${
+                  chatMode === 'learn' 
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]' 
+                    : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
+                }`}
+              >
+                {chatMode === 'learn' ? '📚 FOCUS' : '💖 COZY'}
+              </button>
+            )}
           </div>
 
           {/* TENGAH: Nav Pills */}
@@ -578,16 +586,49 @@ function App() {
 
         {/* VISUAL NOVEL TEXTBOX (HANYA MUNCUL JIKA TIDAK DI PHONE MODE) */}
         <div className={`w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-          <div className="relative bg-zinc-900/85 backdrop-blur-xl border-2 border-pink-500 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all">
+          <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 ${chatMode === 'learn' ? 'border-cyan-500 shadow-[0_10px_30px_rgba(6,182,212,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
             
-            {/* NAME BADGE */}
-            <div className="absolute -top-4 md:-top-5 left-6 md:left-8 flex items-center gap-3">
-              <div className="bg-gradient-to-r from-pink-500 to-rose-400 text-white px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900">
-                AIKA
+            {/* TOP AREA: NAME BADGE & MODE TOGGLE */}
+            <div className="absolute -top-4 md:-top-5 left-6 md:left-8 right-6 flex items-center justify-between pointer-events-none">
+              
+              {/* KIRI: NAME BADGE */}
+              <div className="flex items-center gap-3">
+                <div className={`px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900 text-white transition-colors duration-500 ${
+                  chatMode === 'learn' ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-pink-500 to-rose-400'
+                }`}>
+                  AIKA
+                </div>
+                <div className={`hidden md:block text-xs font-bold tracking-widest uppercase transition-colors duration-500 ${
+                  chatMode === 'learn' ? 'text-cyan-300' : 'text-pink-300'
+                }`}>
+                  VIRTUAL COMPANION
+                </div>
               </div>
-              <div className="hidden md:block text-cyan-400 text-xs font-bold tracking-widest uppercase">
-                VIRTUAL COMPANION
+
+              {/* KANAN: MODE TOGGLE CAPSULE */}
+              <div className="pointer-events-auto bg-zinc-900 border-2 border-zinc-700 rounded-full flex items-center p-1 shadow-lg transition-colors">
+                <button 
+                  onClick={() => setChatMode('normal')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${
+                    chatMode === 'normal' 
+                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]' 
+                      : 'text-zinc-500 hover:text-white'
+                  }`}
+                >
+                  <span>💖</span> Cozy
+                </button>
+                <button 
+                  onClick={() => setChatMode('learn')}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${
+                    chatMode === 'learn' 
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]' 
+                      : 'text-zinc-500 hover:text-white'
+                  }`}
+                >
+                  <span>📚</span> Focus
+                </button>
               </div>
+
             </div>
 
             {/* TEXT DIALOGUE */}
@@ -598,9 +639,9 @@ function App() {
             >
               {isLoading ? (
                  <div className="flex items-center gap-3 mt-2">
-                  <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0s'}}></div>
-                  <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                  <div className="w-2 h-2 rounded-full bg-pink-400 animate-bounce" style={{animationDelay: '0.4s'}}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0s'}}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0.2s'}}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{animationDelay: '0.4s'}}></div>
                 </div>
               ) : (
                 <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide select-none">
@@ -615,7 +656,7 @@ function App() {
 
             {/* INPUT FIELD */}
             <form onSubmit={handleKirim} className="mt-2 md:mt-4">
-              <div className="relative flex items-center bg-black/40 border border-zinc-700/50 rounded-xl md:rounded-2xl p-1.5 transition-all focus-within:border-pink-500/50 focus-within:bg-black/60">
+              <div className={`relative flex items-center bg-black/40 border border-zinc-700/50 rounded-xl md:rounded-2xl p-1.5 transition-all focus-within:bg-black/60 ${chatMode === 'learn' ? 'focus-within:border-cyan-500/50' : 'focus-within:border-pink-500/50'}`}>
                 <button
                   type="button"
                   onClick={toggleListen}
@@ -642,7 +683,7 @@ function App() {
                 <button
                   type="submit"
                   disabled={isInputDisabled || !inputPesan.trim()}
-                  className="bg-teal-500/20 hover:bg-teal-500/40 text-teal-300 border border-teal-500/30 p-2.5 md:p-3 rounded-lg md:rounded-xl ml-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+                  className={`${chatMode === 'learn' ? 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border-cyan-500/30' : 'bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 border-pink-500/30'} border p-2.5 md:p-3 rounded-lg md:rounded-xl ml-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
                     <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
