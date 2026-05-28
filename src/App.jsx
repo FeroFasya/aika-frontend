@@ -164,7 +164,7 @@ function App() {
   const [daftarChat, setDaftarChat] = useState([
     {
       role: 'aika',
-      text: 'Halo Fero. Jarak sedekat ini... membuatku bisa melihatmu lebih jelas.',
+      text: 'ummmm......',
       timestamp: new Date(),
       status: MESSAGE_STATUS.RECEIVED,
       id: 'init-msg'
@@ -435,11 +435,11 @@ function App() {
   const timeString = `${hours.toString().padStart(2, '0')}.${minutes.toString().padStart(2, '0')}`;
   const isNight = hours >= 18 || hours < 6;
   const modeText = isNight ? 'NIGHT MODE' : 'DAY MODE';
-  
+
   // Logic Background Dinamis
   const locLower = currentLocation.toLowerCase();
-  const backgroundUrl = isNight 
-    ? `/backgrounds/${locLower}/${locLower}_night.png` 
+  const backgroundUrl = isNight
+    ? `/backgrounds/${locLower}/${locLower}_night.png`
     : `/backgrounds/${locLower}/${locLower === 'room' ? 'room_normal' : locLower}.png`;
 
   // --- LOGIKA TRANSISI TEMPAT ---
@@ -567,8 +567,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
       />
 
       {/* 2. 3D CANVAS LAYER */}
-      <div 
-        className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ease-in-out" 
+      <div
+        className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ease-in-out"
         style={{ opacity: aikaOpacity }}
       >
         {/* Posisi kamera diatur secara responsif via komponen ResponsiveCamera */}
@@ -621,8 +621,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
               <button
                 onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
                 className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-widest transition-all shadow-lg text-center flex items-center justify-center gap-2 pointer-events-auto ${chatMode === 'learn'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
-                    : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                  : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
                   }`}
               >
                 {chatMode === 'learn' ? '📚 FOCUS' : '💖 COZY'}
@@ -667,8 +667,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
                 <button
                   onClick={() => setChatMode('normal')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${chatMode === 'normal'
-                      ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
-                      : 'text-zinc-500 hover:text-white'
+                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_10px_rgba(236,72,153,0.5)]'
+                    : 'text-zinc-500 hover:text-white'
                     }`}
                 >
                   <span>💖</span> Cozy
@@ -676,8 +676,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
                 <button
                   onClick={() => setChatMode('learn')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${chatMode === 'learn'
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]'
-                      : 'text-zinc-500 hover:text-white'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]'
+                    : 'text-zinc-500 hover:text-white'
                     }`}
                 >
                   <span>📚</span> Focus
