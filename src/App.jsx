@@ -538,9 +538,7 @@ function App() {
       </div>
 
       {/* 3. VIGNETTE OVERLAY (FOCUS MODE ONLY) */}
-      {chatMode === 'learn' && (
-        <div className="absolute inset-0 focus-vignette transition-opacity duration-1000 opacity-100"></div>
-      )}
+      <div className={`absolute inset-0 focus-vignette transition-opacity duration-1000 ${chatMode === 'learn' ? 'opacity-100' : 'opacity-0'}`}></div>
 
       {/* 4. UI OVERLAY LAYER */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between pointer-events-none">
