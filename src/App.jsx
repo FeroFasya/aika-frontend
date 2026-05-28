@@ -457,43 +457,12 @@ function App() {
     // Simulasi Loading Screen
     setTimeout(() => {
       setCurrentLocation(targetPlace);
-      
-      // Pilih 1 dari 3 static script secara acak
-      const scripts = {
-        Kitchen: [
-          "Kamu mau masak apa? Aku temenin ya!",
-          "Dapur ya... awas jangan sampai makananku gosong!",
-          "Hmm, bau makanan enak nih! Fero masak apa?"
-        ],
-        Living: [
-          "Wah, ruang tamunya luas... kamu bosen ya di kamar terus?",
-          "Akhirnya keluar dari kamar! Sini duduk dekat aku.",
-          "Kita mau nonton TV bareng atau santai aja nih?"
-        ],
-        Outside: [
-          "Udara di luar segar banget! Fero suka pemandangannya?",
-          "Aaaanginnya sejuk! Tapi jangan lama-lama ya, nanti masuk angin.",
-          "Pemandangannya bagus, tapi aku lebih suka lihat kamu."
-        ],
-        Room: [
-          "Kembali ke kamar... kasurnya memanggil hahaha.",
-          "Home sweet home! Memang paling enak rebahan ya.",
-          "Balik ke kamar lagi? Udah ngantuk ya?"
-        ]
-      };
+      // Trigger sistem tersembunyi ke LLM
+      const hiddenSystemMessage = `[INFO SISTEM TERSEMBUNYI]: Fero baru saja mengajakmu pindah ke lokasi: ${targetPlace}. 
+Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, seolah kamu baru saja tiba di sini bersamanya. JANGAN BERITAHU Fero bahwa ini adalah pesan sistem.`;
 
-      const placeScripts = scripts[targetPlace] || scripts["Room"];
-      const randomScript = placeScripts[Math.floor(Math.random() * placeScripts.length)];
-
-      const staticData = {
-        indonesian: randomScript,
-        japanese: randomScript, // Voicevox mengandalkan katakana/kanji kalau bisa, tapi dia cukup pintar menebak pelafalan walau teks indo kalau gak terlalu panjang, atau kita samakan saja
-        emotion: 'santai'
-      };
-
-      // Panggil fungsi kirimPesanKeAika TANPA menembak Gemini (hanya TTS)
-      // Ini mengatasi bug input yang ter-disable karena TTS tidak terpanggil
-      kirimPesanKeAika("", false, staticData);
+      // Panggil fungsi kirimPesanKeAika dengan isHidden = true
+      kirimPesanKeAika(hiddenSystemMessage, true);
 
       // Angkat layar loading setelah 1 detik
       setTimeout(() => {
