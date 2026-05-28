@@ -204,28 +204,38 @@ function App() {
   }, [daftarChat]);
 
   // --- SISTEM IDLE (AIKA BOSAN) ---
-  const kirimPesanKeAika = async (pesanTeks, isHidden = false) => {
+  const kirimPesanKeAika = async (pesanTeks, isHidden = false, staticResponse = null) => {
     setIsLoading(true);
 
     const currentTimeString = timeState.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
     try {
-      const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: pesanTeks,
-          history: latestChatRef.current,
-          location: currentLocation,
-          time: currentTimeString,
-          mode: chatMode
-        })
-      });
-      const data = await respon.json();
+      let teksIndonesia = "";
+      let teksJepang = "";
+      let emosiAikaBaru = "santai";
 
-      const teksIndonesia = data.reply;
-      const teksJepang = data.japanese_reply || data.reply;
-      const emosiAikaBaru = data.emotion || 'netral';
+      if (staticResponse) {
+        teksIndonesia = staticResponse.indonesian;
+        teksJepang = staticResponse.japanese;
+        emosiAikaBaru = staticResponse.emotion || 'santai';
+      } else {
+        const respon = await fetch(`${import.meta.env.VITE_API_URL}/api/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: pesanTeks,
+            history: latestChatRef.current,
+            location: currentLocation,
+            time: currentTimeString,
+            mode: chatMode
+          })
+        });
+        const data = await respon.json();
+
+        teksIndonesia = data.reply;
+        teksJepang = data.japanese_reply || data.reply;
+        emosiAikaBaru = data.emotion || 'netral';
+      }
 
       // --- FETCH TTS ---
       let audioTtsUrl = null;
@@ -444,31 +454,46 @@ function App() {
     setIsLoadingPlace(true);
     setAikaOpacity(0); // Aika sembunyi saat loading
 
-    // Simulasi Loading Screen (misal: 1 detik untuk membersihkan state lama)
+    // Simulasi Loading Screen
     setTimeout(() => {
       setCurrentLocation(targetPlace);
       
-      // Kirim pesan interupsi (Static text dari Aika) sesuai tempat
-      let staticAikaResponse = "";
-      if (targetPlace === "Kitchen") staticAikaResponse = "Kamu mau masak apa? Aku temenin ya!";
-      if (targetPlace === "Living") staticAikaResponse = "Wah, ruang tamunya luas... kamu bosen ya di kamar terus?";
-      if (targetPlace === "Outside") staticAikaResponse = "Udara di luar segar banget! Fero suka pemandangannya?";
-      if (targetPlace === "Room") staticAikaResponse = "Kembali ke kamar... kasurnya memanggil hahaha.";
-
-      // Push chat baru sebagai 'Aika' (tanpa fetch LLM dulu, langsung munculin teks static)
-      // Ini membuat Aika langsung "merespon" perpindahan tempat.
-      const newAikaMessage = {
-        role: 'aika',
-        text: staticAikaResponse,
-        chunks: splitIntoChunks(staticAikaResponse),
-        timestamp: new Date(),
-        status: MESSAGE_STATUS.RECEIVED,
-        id: `msg-${Date.now()}`,
-        emosi: 'santai'
+      // Pilih 1 dari 3 static script secara acak
+      const scripts = {
+        Kitchen: [
+          "Kamu mau masak apa? Aku temenin ya!",
+          "Dapur ya... awas jangan sampai makananku gosong!",
+          "Hmm, bau makanan enak nih! Fero masak apa?"
+        ],
+        Living: [
+          "Wah, ruang tamunya luas... kamu bosen ya di kamar terus?",
+          "Akhirnya keluar dari kamar! Sini duduk dekat aku.",
+          "Kita mau nonton TV bareng atau santai aja nih?"
+        ],
+        Outside: [
+          "Udara di luar segar banget! Fero suka pemandangannya?",
+          "Aaaanginnya sejuk! Tapi jangan lama-lama ya, nanti masuk angin.",
+          "Pemandangannya bagus, tapi aku lebih suka lihat kamu."
+        ],
+        Room: [
+          "Kembali ke kamar... kasurnya memanggil hahaha.",
+          "Home sweet home! Memang paling enak rebahan ya.",
+          "Balik ke kamar lagi? Udah ngantuk ya?"
+        ]
       };
 
-      setDaftarChat((prev) => [...prev, newAikaMessage]);
-      setPendingMessage(newAikaMessage); // Trigger TTS dan UI render teks
+      const placeScripts = scripts[targetPlace] || scripts["Room"];
+      const randomScript = placeScripts[Math.floor(Math.random() * placeScripts.length)];
+
+      const staticData = {
+        indonesian: randomScript,
+        japanese: randomScript, // Voicevox mengandalkan katakana/kanji kalau bisa, tapi dia cukup pintar menebak pelafalan walau teks indo kalau gak terlalu panjang, atau kita samakan saja
+        emotion: 'santai'
+      };
+
+      // Panggil fungsi kirimPesanKeAika TANPA menembak Gemini (hanya TTS)
+      // Ini mengatasi bug input yang ter-disable karena TTS tidak terpanggil
+      kirimPesanKeAika("", false, staticData);
 
       // Angkat layar loading setelah 1 detik
       setTimeout(() => {
@@ -573,7 +598,10 @@ function App() {
       />
 
       {/* 2. 3D CANVAS LAYER */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
+      <div 
+        className="absolute inset-0 z-10 pointer-events-none transition-opacity duration-1000 ease-in-out" 
+        style={{ opacity: aikaOpacity }}
+      >
         {/* Posisi kamera diatur secara responsif via komponen ResponsiveCamera */}
         <Canvas>
           <ResponsiveCamera />
@@ -584,7 +612,7 @@ function App() {
             color={isNight ? "#8fa8ff" : "#ffffff"}
           />
           <Suspense fallback={null}>
-            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} opacityTarget={aikaOpacity} />
+            <AikaModel emosiAktif={emosiAika.emosi} emosiTrigger={emosiAika.id} isFeroTyping={feroTyping} audioUrl={audioUrl} isAudioPlaying={isAudioPlaying} />
             <FloatingText
               text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")}
               isVisible={isPhoneMode}
