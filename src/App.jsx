@@ -648,7 +648,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
               <button
                 onClick={() => setChatMode(prev => prev === 'normal' ? 'learn' : 'normal')}
                 className={`px-3 py-1.5 rounded-full font-bold text-[10px] tracking-widest transition-all shadow-lg text-center flex items-center justify-center gap-2 pointer-events-auto ${chatMode === 'learn'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white border-2 border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                  ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white border-2 border-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
                   : 'bg-gradient-to-r from-pink-500 to-rose-500 text-white border-2 border-pink-400 shadow-[0_0_15px_rgba(236,72,153,0.5)]'
                   }`}
               >
@@ -659,10 +659,10 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
 
           {/* TENGAH: Nav Pills */}
           <div className="bg-zinc-900/60 backdrop-blur-md rounded-full p-1.5 flex gap-1 md:gap-2 border border-zinc-700/50 shadow-lg pointer-events-auto">
-            <button onClick={() => handlePlaceClick('Room')} className={`${currentLocation === 'Room' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all active:scale-95`}>ROOM</button>
-            <button onClick={() => handlePlaceClick('Living')} className={`${currentLocation === 'Living' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>LIVING</button>
-            <button onClick={() => handlePlaceClick('Outside')} className={`${currentLocation === 'Outside' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>OUTSIDE</button>
-            <button onClick={() => handlePlaceClick('Kitchen')} className={`${currentLocation === 'Kitchen' ? 'bg-cyan-400 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>KITCHEN</button>
+            <button onClick={() => handlePlaceClick('Room')} className={`${currentLocation === 'Room' ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.4)]' : 'text-zinc-400 hover:text-white'} px-4 md:px-6 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all active:scale-95`}>ROOM</button>
+            <button onClick={() => handlePlaceClick('Living')} className={`${currentLocation === 'Living' ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.4)]' : 'text-zinc-400 hover:text-white'} px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>LIVING</button>
+            <button onClick={() => handlePlaceClick('Outside')} className={`${currentLocation === 'Outside' ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>OUTSIDE</button>
+            <button onClick={() => handlePlaceClick('Kitchen')} className={`${currentLocation === 'Kitchen' ? 'bg-purple-400 text-black shadow-[0_0_15px_rgba(192,132,252,0.4)]' : 'text-zinc-400 hover:text-white'} hidden sm:block px-3 md:px-4 py-2 rounded-full text-[10px] md:text-xs font-bold tracking-wider transition-all`}>KITCHEN</button>
           </div>
 
           {/* KANAN: Spacer untuk menjaga layout nav tetap di tengah (flex-between) */}
@@ -672,18 +672,18 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
 
         {/* VISUAL NOVEL TEXTBOX (HANYA MUNCUL JIKA TIDAK DI PHONE MODE) */}
         <div className={`w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-          <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 ${chatMode === 'learn' ? 'border-cyan-500 shadow-[0_10px_30px_rgba(6,182,212,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
+          <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 ${chatMode === 'learn' ? 'border-purple-500 shadow-[0_10px_30px_rgba(168,85,247,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
 
             {/* TOP AREA: NAME BADGE & MODE TOGGLE */}
             <div className="absolute -top-4 md:-top-5 left-6 md:left-8 right-6 flex items-center justify-between pointer-events-none">
 
               {/* KIRI: NAME BADGE */}
               <div className="flex items-center gap-3">
-                <div className={`px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900 text-white transition-colors duration-500 ${chatMode === 'learn' ? 'bg-gradient-to-r from-cyan-500 to-blue-500' : 'bg-gradient-to-r from-pink-500 to-rose-400'
+                <div className={`px-5 md:px-6 py-1 md:py-1.5 rounded-full text-xs md:text-sm font-bold tracking-widest shadow-lg border-2 border-zinc-900 text-white transition-colors duration-500 ${chatMode === 'learn' ? 'bg-gradient-to-r from-purple-500 to-blue-500' : 'bg-gradient-to-r from-pink-500 to-rose-400'
                   }`}>
                   AIKA
                 </div>
-                <div className={`hidden md:block text-xs font-bold tracking-widest uppercase transition-colors duration-500 ${chatMode === 'learn' ? 'text-cyan-300' : 'text-pink-300'
+                <div className={`hidden md:block text-xs font-bold tracking-widest uppercase transition-colors duration-500 ${chatMode === 'learn' ? 'text-purple-300' : 'text-pink-300'
                   }`}>
                   VIRTUAL COMPANION
                 </div>
@@ -703,7 +703,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
                 <button
                   onClick={() => setChatMode('learn')}
                   className={`px-4 py-1.5 rounded-full text-xs font-bold tracking-wider transition-all flex items-center gap-2 ${chatMode === 'learn'
-                    ? 'bg-gradient-to-r from-cyan-500 to-blue-500 text-white shadow-[0_0_10px_rgba(6,182,212,0.5)]'
+                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-[0_0_10px_rgba(168,85,247,0.5)]'
                     : 'text-zinc-500 hover:text-white'
                     }`}
                 >
@@ -721,9 +721,9 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
             >
               {isLoading ? (
                 <div className="flex items-center gap-3 mt-2">
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0s' }}></div>
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.2s' }}></div>
-                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-cyan-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.4s' }}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-purple-400' : 'bg-pink-400'}`} style={{ animationDelay: '0s' }}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-purple-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.2s' }}></div>
+                  <div className={`w-2 h-2 rounded-full animate-bounce ${chatMode === 'learn' ? 'bg-purple-400' : 'bg-pink-400'}`} style={{ animationDelay: '0.4s' }}></div>
                 </div>
               ) : (
                 <p key={`${emosiAika.id}-${currentChunkIndex}`} className="text-white text-base md:text-xl font-medium leading-relaxed tracking-wide select-none">
@@ -738,7 +738,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
 
             {/* INPUT FIELD */}
             <form onSubmit={handleKirim} className="mt-2 md:mt-4">
-              <div className={`relative flex items-center bg-black/40 border border-zinc-700/50 rounded-xl md:rounded-2xl p-1.5 transition-all focus-within:bg-black/60 ${chatMode === 'learn' ? 'focus-within:border-cyan-500/50' : 'focus-within:border-pink-500/50'}`}>
+              <div className={`relative flex items-center bg-black/40 border border-zinc-700/50 rounded-xl md:rounded-2xl p-1.5 transition-all focus-within:bg-black/60 ${chatMode === 'learn' ? 'focus-within:border-purple-500/50' : 'focus-within:border-pink-500/50'}`}>
                 <button
                   type="button"
                   onClick={toggleListen}
@@ -765,7 +765,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
                 <button
                   type="submit"
                   disabled={isInputDisabled || !inputPesan.trim()}
-                  className={`${chatMode === 'learn' ? 'bg-cyan-500/20 hover:bg-cyan-500/40 text-cyan-300 border-cyan-500/30' : 'bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 border-pink-500/30'} border p-2.5 md:p-3 rounded-lg md:rounded-xl ml-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0`}
+                  className={`${chatMode === 'learn' ? 'bg-purple-500/20 hover:bg-purple-500/40 text-purple-300 border-purple-500/30' : 'bg-pink-500/20 hover:bg-pink-500/40 text-pink-300 border-pink-500/30'} border p-2.5 md:p-3 rounded-lg md:rounded-xl ml-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed shrink-0`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 md:w-5 md:h-5">
                     <path d="M3.478 2.404a.75.75 0 00-.926.941l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.404z" />
@@ -814,10 +814,10 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
         <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
           <div className="bg-zinc-900 border-2 border-zinc-700 p-6 md:p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center">
             <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Pindah Lokasi?</h3>
-            <p className="text-zinc-400 mb-6 text-sm md:text-base">Apakah kamu ingin pergi ke <span className="text-cyan-400 font-bold">{targetPlace}</span>?</p>
+            <p className="text-zinc-400 mb-6 text-sm md:text-base">Apakah kamu ingin pergi ke <span className="text-purple-400 font-bold">{targetPlace}</span>?</p>
             <div className="flex gap-4 justify-center">
               <button onClick={cancelPlaceChange} className="px-6 py-2 rounded-full font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Batal</button>
-              <button onClick={confirmPlaceChange} className="px-6 py-2 rounded-full font-bold bg-cyan-500 hover:bg-cyan-400 text-black shadow-[0_0_15px_rgba(6,182,212,0.5)] transition-all active:scale-95">Pergi</button>
+              <button onClick={confirmPlaceChange} className="px-6 py-2 rounded-full font-bold bg-purple-500 hover:bg-purple-400 text-black shadow-[0_0_15px_rgba(168,85,247,0.5)] transition-all active:scale-95">Pergi</button>
             </div>
           </div>
         </div>
@@ -825,8 +825,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
 
       {/* --- LAYAR LOADING TRANSISI --- */}
       <div className={`absolute inset-0 z-[110] bg-black flex flex-col items-center justify-center transition-opacity duration-1000 ${isLoadingPlace ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
-        <div className="w-12 h-12 border-4 border-zinc-800 border-t-cyan-500 rounded-full animate-spin mb-4"></div>
-        <p className="text-cyan-400 font-bold tracking-widest text-sm animate-pulse">MEMUAT LOKASI...</p>
+        <div className="w-12 h-12 border-4 border-zinc-800 border-t-purple-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-purple-400 font-bold tracking-widest text-sm animate-pulse">MEMUAT LOKASI...</p>
       </div>
 
     </div>
