@@ -635,22 +635,8 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
         {/* TOP BAR */}
         <div className="w-full p-4 md:p-6 flex justify-between items-start">
 
-          {/* KIRI: Clock Widget & Saklar Persona & Project Logo */}
+          {/* KIRI: Clock Widget & Saklar Persona */}
           <div className="flex flex-col gap-4 pointer-events-auto">
-            
-            {/* Cyberpunk Project Title */}
-            <div className="hidden md:flex items-center gap-2 pointer-events-none select-none opacity-50">
-              <div className="grid grid-cols-2 gap-[2px]">
-                <div className="w-1 h-1 bg-pink-500 rounded-full"></div>
-                <div className="w-1 h-1 bg-pink-500 rounded-full"></div>
-                <div className="w-1 h-1 bg-pink-500 rounded-full"></div>
-                <div className="w-1 h-1 bg-pink-500 rounded-full"></div>
-                <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
-                <div className="w-1 h-1 bg-purple-500 rounded-full"></div>
-              </div>
-              <span className="text-[10px] font-mono tracking-[0.3em] text-white">PROJECT AIKA</span>
-            </div>
-
             {/* Clock Widget */}
             <div className="bg-zinc-900/80 backdrop-blur-md rounded-xl px-4 py-2 border border-zinc-700/50 shadow-lg flex flex-col items-center pointer-events-none">
               <span className="text-white font-bold text-xl md:text-2xl tracking-wider">{timeString}</span>
@@ -686,14 +672,7 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
 
         {/* VISUAL NOVEL TEXTBOX (HANYA MUNCUL JIKA TIDAK DI PHONE MODE) */}
         <div className={`w-full max-w-5xl mx-auto px-4 pb-6 md:pb-8 pointer-events-auto transition-all duration-700 ${isPhoneMode ? 'opacity-0 translate-y-10 pointer-events-none' : 'opacity-100 translate-y-0'}`}>
-          <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 overflow-hidden ${chatMode === 'learn' ? 'border-purple-500 shadow-[0_10px_30px_rgba(168,85,247,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
-
-            {/* CYBERPUNK VIBES: Grid Overlay & Decorative Elements */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#fff 1px, transparent 1px)', backgroundSize: '16px 16px' }}></div>
-            <div className="absolute left-6 top-3 text-[10px] font-mono tracking-[0.3em] text-zinc-600 pointer-events-none select-none hidden md:block">SYS-01 // AI_COMPANION</div>
-            <div className="absolute right-6 bottom-3 text-[9px] font-mono tracking-[0.3em] text-zinc-600 pointer-events-none select-none hidden md:block">EST. 2026 ✦</div>
-            <div className="absolute right-8 top-1/2 -translate-y-1/2 text-[100px] font-bold text-white/5 pointer-events-none select-none tracking-widest hidden lg:block">Λ I K Λ</div>
-
+          <div className={`relative bg-zinc-900/85 backdrop-blur-xl border-2 rounded-2xl md:rounded-3xl shadow-2xl p-5 md:p-8 flex flex-col gap-4 md:gap-6 transform transition-all duration-500 ${chatMode === 'learn' ? 'border-purple-500 shadow-[0_10px_30px_rgba(168,85,247,0.2)]' : 'border-pink-500 shadow-[0_10px_30px_rgba(236,72,153,0.2)]'}`}>
 
             {/* TOP AREA: NAME BADGE & MODE TOGGLE */}
             <div className="absolute -top-4 md:-top-5 left-6 md:left-8 right-6 flex items-center justify-between pointer-events-none">
