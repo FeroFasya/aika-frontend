@@ -28,34 +28,24 @@ function splitIntoChunks(text, maxWords = 15) {
   return chunks;
 }
 
-function FloatingText({ text, isVisible, isAudioPlaying, chatMode }) {
+function FloatingText({ text, isVisible }) {
   if (!isVisible || !text) return null;
 
-  const words = text.split(' ');
-  let charIndexCounter = 0;
-
   return (
-    <Html position={[0, 1.2, 0.4]} center zIndexRange={[100, 0]}>
-      <div key={text} className="w-[90vw] max-w-[450px] md:max-w-[2000px] text-2xl md:text-3xl tracking-wide leading-snug text-center">
-        {words.map((word, wIdx) => (
-          <span key={wIdx} className="inline-block whitespace-nowrap mr-[0.3em]">
-            {word.split('').map((char, cIdx) => {
-              const globalIdx = charIndexCounter++;
-              return (
-                <span
-                  key={globalIdx}
-                  className={`inline-block ${chatMode === 'learn' ? 'miside-text-focus' : 'miside-text'} ${isAudioPlaying ? 'animate-wave-entry' : 'animate-fall-exit'}`}
-                  style={{
-                    animationDelay: isAudioPlaying ? `${globalIdx * 0.05}s` : `${globalIdx * 0.015}s`,
-                    padding: '2px' // Memberi ruang agar stroke font tidak terpotong
-                  }}
-                >
-                  {char}
-                </span>
-              );
-            })}
-          </span>
-        ))}
+    <Html position={[0, 1.15, 0.4]} center zIndexRange={[100, 0]}>
+      <div
+        key={text}
+        className="w-[90vw] max-w-[480px] text-center select-none pointer-events-none transition-opacity duration-150"
+      >
+        <span
+          className="inline-block bg-black/80 text-white font-sans font-medium text-xs md:text-sm leading-relaxed tracking-normal px-2.5 py-1 rounded-sm shadow-md backdrop-blur-[2px] border border-white/10"
+          style={{
+            boxDecorationBreak: 'clone',
+            WebkitBoxDecorationBreak: 'clone'
+          }}
+        >
+          {text}
+        </span>
       </div>
     </Html>
   );
@@ -612,8 +602,6 @@ Berikan reaksi atau sapaan natural (singkat, max 10 kata) tentang lokasi ini, se
             <FloatingText
               text={textChunks.length > 0 ? textChunks[currentChunkIndex] : (isPhoneMode ? latestAikaMessage : "")}
               isVisible={isPhoneMode}
-              isAudioPlaying={isAudioPlaying}
-              chatMode={chatMode}
             />
           </Suspense>
           {/* OrbitControls dikunci agar Aika tidak bisa diputar, tapi targetnya dipastikan ke dada/wajah */}
